@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Shopmate</string>
+    <string name="shortcut_new_bill">New Bill</string>
+    <string name="shortcut_new_bill_long">Create a new bill</string>
+    <string name="shortcut_scan">Scan</string>
+    <string name="shortcut_scan_long">Scan item barcode</string>
+</resources>

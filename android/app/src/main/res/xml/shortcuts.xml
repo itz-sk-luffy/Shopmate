@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_bill"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_bill"
+        android:shortcutLongLabel="@string/shortcut_new_bill_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.shopmate.pos"
+            android:targetClass="com.shopmate.pos.MainActivity"
+            android:data="shopmate://billing" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="scan_item"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_scan"
+        android:shortcutLongLabel="@string/shortcut_scan_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.shopmate.pos"
+            android:targetClass="com.shopmate.pos.MainActivity"
+            android:data="shopmate://scan" />
+    </shortcut>
+</shortcuts>
