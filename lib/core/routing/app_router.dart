@@ -317,13 +317,15 @@ GoRouter createRouter({
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final settings = ref.watch(settingsProvider);
+  final hasCompletedOnboarding = ref.watch(settingsProvider.select((s) => s.hasCompletedOnboarding));
+  final isAppLockEnabled = ref.watch(settingsProvider.select((s) => s.isAppLockEnabled));
+  final isLoading = ref.watch(settingsProvider.select((s) => s.isLoading));
   final isUnlocked = ref.watch(isUnlockedProvider);
 
   return createRouter(
-    hasCompletedOnboarding: settings.hasCompletedOnboarding,
-    isAppLockEnabled: settings.isAppLockEnabled,
+    hasCompletedOnboarding: hasCompletedOnboarding,
+    isAppLockEnabled: isAppLockEnabled,
     isUnlocked: isUnlocked,
-    isLoading: settings.isLoading,
+    isLoading: isLoading,
   );
 });

@@ -11,6 +11,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../orders/data/orders_repository.dart';
+import '../../recycle_bin/data/recycle_bin_repository.dart';
 import '../data/customers_repository.dart';
 
 class CustomerDetailScreen extends ConsumerStatefulWidget {
@@ -592,11 +593,24 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                     );
                   },
                   onDismissed: (_) async {
+                    setState(() {
+                      _customerBills.removeWhere((b) => b.id == bill.id);
+                    });
                     await ref.read(ordersRepositoryProvider).softDeleteBill(bill.id);
                     _loadData();
                     if (context.mounted) {
+                      ScaffoldMessenger.of(context).clearSnackBars();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Moved ${bill.billNumber} to Recycle Bin')),
+                        SnackBar(
+                          content: Text('Moved ${bill.billNumber} to Recycle Bin'),
+                          action: SnackBarAction(
+                            label: 'Undo',
+                            onPressed: () async {
+                              await ref.read(recycleBinRepositoryProvider).restoreBillById(bill.id);
+                              _loadData();
+                            },
+                          ),
+                        ),
                       );
                     }
                   },

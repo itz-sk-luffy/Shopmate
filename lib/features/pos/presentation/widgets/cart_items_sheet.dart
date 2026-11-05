@@ -12,7 +12,6 @@ import '../../../../core/utils/image_helper.dart';
 import '../../../products/data/products_repository.dart';
 import '../../domain/cart_item.dart';
 import '../providers/cart_provider.dart';
-import 'checkout_sheet.dart';
 import 'custom_item_dialog.dart';
 
 class CartItemsSheet extends ConsumerWidget {
@@ -240,7 +239,7 @@ class CartItemsSheet extends ConsumerWidget {
                 TextButton.icon(
                   onPressed: () => _openCustomItemDialog(context, ref),
                   icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
-                  label: const Text('Add Item', style: TextStyle(fontSize: 12)),
+                  label: const Text('Add New', style: TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
                 ),
                 TextButton.icon(
@@ -253,11 +252,6 @@ class CartItemsSheet extends ConsumerWidget {
                   icon: const Icon(Icons.delete_sweep_rounded, size: 16),
                   label: const Text('Clear', style: TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  tooltip: 'Close Cart',
-                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
@@ -354,8 +348,7 @@ class CartItemsSheet extends ConsumerWidget {
                                                   width: 48,
                                                   height: 48,
                                                   fit: BoxFit.cover,
-                                                  cacheWidth: 100,
-                                                  cacheHeight: 100,
+                                                  cacheWidth: 120,
                                                   filterQuality: FilterQuality.low,
                                                   errorBuilder: (_, __, ___) => Icon(
                                                     Icons.inventory_2_outlined,
@@ -636,12 +629,7 @@ class CartItemsSheet extends ConsumerWidget {
                         flex: 3,
                         child: FilledButton.icon(
                           onPressed: () {
-                            Navigator.pop(context);
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              builder: (ctx) => CheckoutSheet(currencySymbol: currencySymbol),
-                            );
+                            Navigator.pop(context, 'checkout');
                           },
                           icon: const Icon(Icons.payment_rounded, size: 18),
                           label: Text(

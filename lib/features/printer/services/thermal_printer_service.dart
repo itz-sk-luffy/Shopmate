@@ -1,7 +1,10 @@
+import 'dart:developer' as dev;
+import 'dart:io';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
@@ -32,23 +35,66 @@ class ThermalPrinterService {
     }
   }
 
+  Future<bool> requestBluetoothPermissions() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      dev.log('[ThermalPrinterService] Requesting Bluetooth permissions...', name: 'Printer');
+      final statuses = await [
+        Permission.bluetoothConnect,
+        Permission.bluetoothScan,
+        Permission.location,
+      ].request();
+
+      final connectGranted = statuses[Permission.bluetoothConnect]?.isGranted ?? true;
+      final scanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? true;
+      dev.log('[ThermalPrinterService] Permissions: connect=$connectGranted, scan=$scanGranted', name: 'Printer');
+      return connectGranted && scanGranted;
+    } catch (e) {
+      dev.log('[ThermalPrinterService] Permission request error: $e', name: 'Printer');
+      return false;
+    }
+  }
+
   Future<List<BluetoothInfo>> getPairedDevices() async {
     try {
-      return await PrintBluetoothThermal.pairedBluetooths;
-    } catch (_) {
+      await requestBluetoothPermissions();
+      final devices = await PrintBluetoothThermal.pairedBluetooths;
+      dev.log('[ThermalPrinterService] Found ${devices.length} paired devices', name: 'Printer');
+      return devices;
+    } catch (e) {
+      dev.log('[ThermalPrinterService] getPairedDevices error: $e', name: 'Printer');
       return [];
     }
   }
 
   Future<bool> connect(String macAddress) async {
     try {
-      final success = await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
+      await requestBluetoothPermissions();
+      // Disconnect any stale or hanging socket first
+      try {
+        await PrintBluetoothThermal.disconnect;
+      } catch (_) {}
+
+      dev.log('[ThermalPrinterService] Connecting to $macAddress...', name: 'Printer');
+      bool success = await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
+
+      // Retry once if first socket attempt fails (common on Android RFCOMM channels)
+      if (!success) {
+        dev.log('[ThermalPrinterService] Attempt 1 failed, retrying in 500ms...', name: 'Printer');
+        await Future.delayed(const Duration(milliseconds: 500));
+        success = await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
+      }
+
       if (success) {
         final db = _ref.read(databaseProvider);
         await db.setSetting('last_printer_mac', macAddress);
+        dev.log('[ThermalPrinterService] Successfully connected to $macAddress', name: 'Printer');
+      } else {
+        dev.log('[ThermalPrinterService] Failed to connect to $macAddress', name: 'Printer');
       }
       return success;
-    } catch (_) {
+    } catch (e) {
+      dev.log('[ThermalPrinterService] connect exception: $e', name: 'Printer');
       return false;
     }
   }

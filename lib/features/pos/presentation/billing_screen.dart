@@ -19,6 +19,7 @@ import 'widgets/custom_item_dialog.dart';
 import 'widgets/customer_select_dialog.dart';
 import 'widgets/held_bills_sheet.dart';
 import 'widgets/cart_items_sheet.dart';
+import 'widgets/checkout_sheet.dart';
 import 'widgets/fast_scan_sheet.dart';
 
 class BillingScreen extends ConsumerStatefulWidget {
@@ -142,6 +143,32 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => const FastScanSheet(),
     );
+  }
+
+  void _openCartSheet() async {
+    final settings = ref.read(settingsProvider);
+    final res = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => CartItemsSheet(currencySymbol: settings.currencySymbol),
+    );
+    if (res == 'checkout' && mounted) {
+      _openCheckoutSheet();
+    }
+  }
+
+  void _openCheckoutSheet() async {
+    final settings = ref.read(settingsProvider);
+    final result = await showModalBottomSheet<dynamic>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => CheckoutSheet(currencySymbol: settings.currencySymbol),
+    );
+    if (result == 'back_to_cart' && mounted) {
+      _openCartSheet();
+    }
   }
 
   void _openWeightSheet(Product product) {
@@ -547,6 +574,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
           _StickyBottomCartBar(
             currencySymbol: settings.currencySymbol,
             isDark: isDark,
+            onViewCart: _openCartSheet,
           ),
         ],
       ),
@@ -613,10 +641,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                                 final imgPath = File(thumb).existsSync() ? thumb : product.imagePath!;
                                 return Image.file(
                                   File(imgPath),
-                                  fit: BoxFit.cover,
-                                  cacheWidth: 150,
-                                  cacheHeight: 150,
-                                  filterQuality: FilterQuality.low,
+                                  fit: BoxFit.contain,
+                                  cacheWidth: 200,
+                                  filterQuality: FilterQuality.medium,
                                   errorBuilder: (_, __, ___) => Icon(
                                     Icons.shopping_bag_outlined,
                                     size: 26,
@@ -705,10 +732,12 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
 class _StickyBottomCartBar extends ConsumerWidget {
   final String currencySymbol;
   final bool isDark;
+  final VoidCallback onViewCart;
 
   const _StickyBottomCartBar({
     required this.currencySymbol,
     required this.isDark,
+    required this.onViewCart,
   });
 
   @override
@@ -756,13 +785,7 @@ class _StickyBottomCartBar extends ConsumerWidget {
             child: SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (ctx) => CartItemsSheet(currencySymbol: currencySymbol),
-                  );
-                },
+                onPressed: onViewCart,
                 icon: Badge(
                   label: Text(
                     '${cartSummary.itemCount}',

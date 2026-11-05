@@ -10,10 +10,12 @@ import '../../../printer/services/receipt_actions.dart';
 
 class SaleCompleteDialog extends ConsumerStatefulWidget {
   final int billId;
+  final Bill? initialBill;
 
   const SaleCompleteDialog({
     super.key,
     required this.billId,
+    this.initialBill,
   });
 
   @override
@@ -28,7 +30,12 @@ class _SaleCompleteDialogState extends ConsumerState<SaleCompleteDialog> {
   @override
   void initState() {
     super.initState();
-    _loadBill();
+    if (widget.initialBill != null) {
+      _bill = widget.initialBill;
+      _isLoading = false;
+    } else {
+      _loadBill();
+    }
   }
 
   Future<void> _loadBill() async {
@@ -78,20 +85,38 @@ class _SaleCompleteDialogState extends ConsumerState<SaleCompleteDialog> {
     }
   }
 
+  Future<void> _onA4Pdf() async {
+    if (_workingAction != null || _bill == null) return;
+    setState(() => _workingAction = 'pdf');
+    dev.log('[SaleCompleteDialog] View/Print A4 PDF tapped for bill ${_bill!.billNumber}', name: 'SaleComplete');
+
+    try {
+      await ref.read(receiptActionsProvider).a4Pdf(_bill!.id, context: context);
+    } catch (e, stack) {
+      dev.log('[SaleCompleteDialog] A4 PDF error: $e', error: e, stackTrace: stack, name: 'SaleComplete');
+    } finally {
+      if (mounted) setState(() => _workingAction = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(settingsProvider);
 
-    return Dialog.fullscreen(
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Order Complete'),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
             icon: const Icon(Icons.close_rounded),
+            tooltip: 'Close',
             onPressed: () => Navigator.of(context).pop(),
           ),
-        ),
+        ],
+      ),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -235,9 +260,23 @@ class _SaleCompleteDialogState extends ConsumerState<SaleCompleteDialog> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
+                          const SizedBox(height: 12),
+
+                          // 3. View / Print A4 PDF
+                          OutlinedButton.icon(
+                            onPressed: _workingAction != null ? null : _onA4Pdf,
+                            icon: _workingAction == 'pdf'
+                                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                : const Icon(Icons.picture_as_pdf_rounded),
+                            label: const Text('View / Print A4 PDF'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
                           const SizedBox(height: 16),
 
-                          // 3. New Sale / Done Button
+                          // 4. New Sale / Done Button
                           FilledButton(
                             onPressed: () => Navigator.of(context).pop(),
                             style: FilledButton.styleFrom(
@@ -251,9 +290,8 @@ class _SaleCompleteDialogState extends ConsumerState<SaleCompleteDialog> {
                       ],
                     ),
                   ),
-        ),
-      ),
-    );
+                ),
+            );
   }
 }
 

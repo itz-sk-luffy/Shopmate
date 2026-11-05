@@ -48,15 +48,16 @@ The application operates entirely on-device using a typed SQLite database powere
 - **Hardware Barcode Wedge Listener**: Global keyboard event interception handles inputs from external handheld USB and Bluetooth barcode scanners without requiring focus on a search field.
 - **Integrated Camera Scanner**: High-speed camera barcode scanning with torch control and haptic feedback via `mobile_scanner`.
 - **Loose Item / Weighed Products**: Quick weight preset buttons (100g, 250g, 500g, 1kg, 2kg, 5kg), custom decimal input, and automatic subtotal calculation.
-- **Quick Cash Keypad**: Smart cash tender suggestions (Exact, ₹100, ₹200, ₹500, ₹2000) with live change-due display.
+- **Quick Cash Tender**: Smart cash tender suggestions (Exact, ₹100, ₹200, ₹500, ₹2000) with live change-due display and zero dead-space layout.
 - **Multi-Mode Payment**: Supports Cash, UPI, Debit/Credit Card, Udhaar (Store Credit), and Split Payments (Cash + Digital).
+- **Dedicated Order Complete Hub**: Instant full-screen post-checkout screen featuring 1-tap 58 mm Bluetooth thermal printing, WhatsApp A4 PDF sharing, A4 print preview, and quick-start next sale.
 - **Held Bills (Parked Carts)**: Park incomplete customer carts during counter delays and restore them anytime.
 - **Dynamic Quick Item Entry**: Add custom or uncataloged items directly to the active bill with an option to simultaneously save them to the product catalog.
 
 ### 📦 Product & Category Management
 - **Catalog CRUD**: Manage products with custom SKU/barcodes, pricing, tax rates, unit types (`pcs`, `kg`, `g`, `l`, `ml`, `pack`), and category tags.
 - **Category Hierarchy & Assignment**: Create, edit, and organize product categories, with multi-product batch assignment.
-- **In-App Google Web Image Search**: Built-in WebView allows store owners to search product images online, crop, downsample in a background isolate, and assign them without API keys.
+- **In-App Google Web Image Search**: Built-in WebView allows store owners to search product images online, automatically crop 1:1, downsample in a background isolate, and assign them without API keys.
 - **Android Share Target**: Share images directly from Android Gallery or WhatsApp into Shopmate to instantly populate product images.
 - **Barcode Label Generator**: Generate and print Code128 barcodes formatted for 58 mm thermal printers.
 - **Catalog Import / Export**: Bulk CSV import and export for rapid inventory initialization.
@@ -68,6 +69,7 @@ The application operates entirely on-device using a typed SQLite database powere
 
 ### 👥 Customers & Udhaar (Credit) Ledger
 - **Customer Directory**: Track customer contact info, purchase history, and outstanding balances.
+- **Swipe-to-Delete**: Swipe left on any customer ledger row to quickly delete with confirmation.
 - **One-Tap WhatsApp Reminders**: Generate direct WhatsApp payment reminder links (`wa.me`) with pre-filled balance statements and merchant UPI details.
 - **Direct Credit Settlement**: Settle outstanding balances directly from the customer ledger or during order review.
 
@@ -79,8 +81,15 @@ The application operates entirely on-device using a typed SQLite database powere
 ### 💰 Cash Register & Day-End Closing
 - **Daily Drawer Reconciliation**: Tracks opening cash balance, cash sales, cash expenses, customer credit payments, and calculates the expected cash in hand:
   $$\text{Expected Cash} = \text{Opening Balance} + \text{Cash Sales} + \text{Credit Collected} - \text{Cash Expenses}$$
-- **Denomination Breakdown**: Built-in physical currency denomination counter (₹2000, ₹500, ₹200, ₹100, ₹50, ₹20, ₹10, ₹5, coins).
+- **Denomination Breakdown & Quick Add**: Built-in physical currency denomination counter (+₹100, +₹200, +₹500, +₹2000, Exact) and discrepancy calculation.
+- **Swipe-to-Delete Past Closings**: Swipe left on past closing history records to remove obsolete entries.
 - **End-of-Day Thermal Report**: Prints a consolidated register summary on 58 mm thermal paper before closing.
+
+### 📱 Poco C51 & Device Performance Tuning
+- **Ultra-Low Memory Footprint**: Hard 15 MB in-memory image cache cap with automatic trimming under Android native low-memory signals (`onTrimMemory`).
+- **Device-Native Keyboard Entry**: Utilizes system numeric keyboard avoiding slow in-app virtual keyboard overhead.
+- **Dynamic App Launcher Icon Presets**: Switch between 4 distinct store branding icons (Classic Blue, Neon Green, Warm Amber, Neon Purple) on the home screen.
+- **Smooth 60 FPS Charts**: Cubic spline hourly sales trends and real-time dashboard analytics.
 
 ### 🛡️ Data Protection, Security & Maintenance
 - **Biometric & PIN Lock**: Secure POS access with a 4-digit master PIN and fingerprint/face authentication via `local_auth`.
@@ -306,25 +315,25 @@ All release builds can also be downloaded directly from [GitHub Releases](https:
 
 ## 12. Screenshots
 
-### 🛒 High-Speed POS Counter & Cart Operations
-| POS Billing Catalog (Grid) | Cart & Counter Billing |
-|:---:|:---:|
-| <img src="docs/screenshots/pos_billing.jpg" width="280" alt="POS Counter Grid" /><br><sub>*High-Speed Product Grid, Search & Category Filters*</sub> | <img src="docs/screenshots/cart_screen.jpg" width="280" alt="Cart & Counter Billing" /><br><sub>*Live Subtotal, Cash Shortcuts & Quick Edit/Delete*</sub> |
+### 🛒 High-Speed POS Counter, Cart & Order Completion
+| POS Billing Catalog (Grid) | Cart & Counter Billing | Checkout & Payment | Order Complete & Receipt |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/pos_billing.png" width="240" alt="POS Counter Grid" /><br><sub>*High-Speed Product Grid, Search & Category Filters*</sub> | <img src="docs/screenshots/cart_screen.png" width="240" alt="Cart & Counter Billing" /><br><sub>*Live Subtotal, Line Items & Add/Clear Actions*</sub> | <img src="docs/screenshots/checkout_screen.png" width="240" alt="Checkout & Payment" /><br><sub>*Quick Cash Shortcuts, Change Calculation & Multi-Pay*</sub> | <img src="docs/screenshots/order_complete.png" width="240" alt="Order Complete" /><br><sub>*Direct 58mm Thermal Print, A4 PDF Share & New Sale*</sub> |
 
-### 📦 Catalog Management & Day-End Closing
-| Product Catalog Management | Day-End Register Closing |
-|:---:|:---:|
-| <img src="docs/screenshots/catalog_screen.jpg" width="280" alt="Product Catalog" /><br><sub>*Category Tags, Stock Organization & Barcode Sync*</sub> | <img src="docs/screenshots/day_closing.png" width="280" alt="Day-End Closing" /><br><sub>*Cash Drawer Reconciliation & Swipe-Left-to-Delete*</sub> |
+### 📊 Real-Time Analytics & Store Management
+| Dashboard & Hourly Sales Trend | Day-End Register Closing | Reports & Analytics | Store Settings & Presets |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/dashboard_analytics.png" width="240" alt="Dashboard Analytics" /><br><sub>*Live Sales Metrics, Metrics Cards & Hourly Curve*</sub> | <img src="docs/screenshots/day_closing.png" width="240" alt="Day-End Closing" /><br><sub>*Cash Drawer Reconciliation & Swipe-Left Delete*</sub> | <img src="docs/screenshots/reports_analytics.png" width="240" alt="Reports & Analytics" /><br><sub>*Day-Wise Sales, Item Breakdown & Tax Summaries*</sub> | <img src="docs/screenshots/settings_screen.png" width="240" alt="Settings & Launcher Presets" /><br><sub>*Themes, Poco C51 Optimizations & Icon Presets*</sub> |
 
-### 🧾 Thermal Receipts, Tax Invoices & Ledger
-| 58 mm Bluetooth Thermal Receipt | A4 GST Tax Invoice (PDF) | Order Details & Audit Trail |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/thermal_receipt.png" width="260" alt="58mm Thermal Receipt Preview" /><br><sub>*Compact 32-Col ESC/POS Print*</sub> | <img src="docs/screenshots/a4_invoice.png" width="260" alt="A4 GST Tax Invoice" /><br><sub>*Indian Words & GST Breakdown*</sub> | <img src="docs/screenshots/order_details.png" width="260" alt="Order Details" /><br><sub>*In-Place Bill Editing & Audit Trail*</sub> |
+### 🧾 Invoicing, Hardware & Auditing
+| Product Catalog Management | Past Orders & Audit Details | 58 mm Thermal Printer Setup | A4 GST Tax Invoice (PDF) |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/catalog_screen.png" width="240" alt="Product Catalog" /><br><sub>*Clean Stock List, Pricing & Quick Add*</sub> | <img src="docs/screenshots/order_details.png" width="240" alt="Order Details" /><br><sub>*Itemized Breakdown & In-Place Bill Auditing*</sub> | <img src="docs/screenshots/printer_setup.png" width="240" alt="Thermal Printer Setup" /><br><sub>*Bluetooth Pairing, Test Print & Layout Options*</sub> | <img src="docs/screenshots/a4_invoice.png" width="240" alt="A4 GST Tax Invoice" /><br><sub>*Indian Words & GST Breakdown*</sub> |
 
-### 👥 Customer Ledger & Hardware Setup
-| Customer Udhaar (Credit) Ledger | Bluetooth Thermal Printer Setup |
+### 👥 Customer Udhaar Ledger & ESC/POS Print
+| Customer Udhaar (Credit) Ledger | 58 mm Thermal Receipt Preview |
 |:---:|:---:|
-| <img src="docs/screenshots/customer_ledger.png" width="280" alt="Customer Credit Ledger" /><br><sub>*Receivables & WhatsApp Reminders*</sub> | <img src="docs/screenshots/printer_setup.jpg" width="280" alt="Printer Setup" /><br><sub>*58mm Bluetooth Pairing & Test Print*</sub> |
+| <img src="docs/screenshots/customer_ledger.png" width="260" alt="Customer Credit Ledger" /><br><sub>*Receivables, WhatsApp Reminders & Swipe-to-Delete*</sub> | <img src="docs/screenshots/thermal_receipt.png" width="260" alt="58mm Thermal Receipt Preview" /><br><sub>*Compact 32-Col ESC/POS Print*</sub> |
 
 ---
 

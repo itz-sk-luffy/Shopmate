@@ -59,8 +59,16 @@ class CustomersRepository {
     );
   }
 
-  Future<int> deleteCustomer(int id) {
-    return (_db.delete(_db.customers)..where((tbl) => tbl.id.equals(id))).go();
+  Future<int> deleteCustomer(int id) async {
+    return await _db.transaction(() async {
+      // 1. Unlink bills referencing this customer so Foreign Key constraints are satisfied
+      // while preserving historical sales reports and customer name/phone strings
+      await (_db.update(_db.bills)..where((tbl) => tbl.customerId.equals(id))).write(
+        const BillsCompanion(customerId: Value(null)),
+      );
+      // 2. Delete the customer record
+      return await (_db.delete(_db.customers)..where((tbl) => tbl.id.equals(id))).go();
+    });
   }
 }
 

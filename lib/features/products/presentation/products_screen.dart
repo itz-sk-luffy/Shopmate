@@ -14,7 +14,6 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/custom_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../data/products_repository.dart';
-import 'barcode_label_dialog.dart';
 import 'bulk_label_print_screen.dart';
 import 'bulk_assign_barcode_screen.dart';
 import 'unmatched_scans_screen.dart';
@@ -167,17 +166,6 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         );
       }
     }
-  }
-
-  void _showBarcodeLabel(Product product) {
-    final settings = ref.read(settingsProvider);
-    showDialog(
-      context: context,
-      builder: (_) => BarcodeLabelDialog(
-        product: product,
-        currencySymbol: settings.currencySymbol,
-      ),
-    );
   }
 
   @override
@@ -540,8 +528,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                             File(product.imagePath!),
                             fit: BoxFit.cover,
                             cacheWidth: 150,
-                            cacheHeight: 150,
-                            filterQuality: FilterQuality.low,
+                            filterQuality: FilterQuality.medium,
                           )
                         : Icon(Icons.shopping_bag_outlined, color: theme.colorScheme.primary, size: 26),
                   ),
@@ -598,31 +585,18 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     Formatters.currency(product.price, symbol: currency),
                     style: AppTypography.priceMedium.copyWith(fontSize: 15),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.qr_code_2_rounded, size: 20),
-                        tooltip: 'Barcode Label',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => _showBarcodeLabel(product),
-                      ),
-                      const SizedBox(width: 12),
-                      IconButton(
-                        icon: Icon(
-                          product.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                          size: 20,
-                          color: product.isFavorite ? AppColors.accentAmber : null,
-                        ),
-                        tooltip: 'Favorite',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          ref.read(productsRepositoryProvider).toggleFavorite(product.id, product.isFavorite);
-                        },
-                      ),
-                    ],
+                  IconButton(
+                    icon: Icon(
+                      product.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 20,
+                      color: product.isFavorite ? AppColors.accentAmber : null,
+                    ),
+                    tooltip: 'Favorite',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      ref.read(productsRepositoryProvider).toggleFavorite(product.id, product.isFavorite);
+                    },
                   ),
                 ],
               ),
@@ -661,10 +635,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         child: product.imagePath != null && File(product.imagePath!).existsSync()
                             ? Image.file(
                                 File(product.imagePath!),
-                                fit: BoxFit.cover,
-                                cacheWidth: 150,
-                                cacheHeight: 150,
-                                filterQuality: FilterQuality.low,
+                                fit: BoxFit.contain,
+                                cacheWidth: 200,
+                                filterQuality: FilterQuality.medium,
                               )
                             : Icon(Icons.shopping_bag_outlined, color: theme.colorScheme.primary, size: 36),
                       ),

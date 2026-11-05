@@ -52,32 +52,11 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
     super.dispose();
   }
 
-  void _onCashKeypadPress(String char) {
-    HapticFeedback.selectionClick();
-    final text = _cashTenderedController.text;
-    if (char == '⌫') {
-      if (text.isNotEmpty) {
-        final newText = text.substring(0, text.length - 1);
-        _cashTenderedController.text = newText;
-        ref.read(cartProvider.notifier).setCashTendered(double.tryParse(newText) ?? 0.0);
-      }
-    } else if (char == '.') {
-      if (!text.contains('.')) {
-        final newText = text.isEmpty ? '0.' : '$text.';
-        _cashTenderedController.text = newText;
-        ref.read(cartProvider.notifier).setCashTendered(double.tryParse(newText) ?? 0.0);
-      }
-    } else {
-      final newText = (text == '0') ? char : text + char;
-      _cashTenderedController.text = newText;
-      ref.read(cartProvider.notifier).setCashTendered(double.tryParse(newText) ?? 0.0);
-    }
-  }
-
   void _setExactCash(double amount) {
     HapticFeedback.lightImpact();
     _cashTenderedController.text = amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2);
     ref.read(cartProvider.notifier).setCashTendered(amount);
+    setState(() {});
   }
 
   void _showDiscountDialog() {
@@ -197,26 +176,9 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
       HapticFeedback.heavyImpact();
 
       if (mounted) {
-        final billId = createdBill.id;
         setState(() => _isProcessing = false);
-        Navigator.pop(context); // Close checkout sheet
 
-        // Trigger callback or show SaleCompleteDialog
-        if (widget.onSaleComplete != null) {
-          widget.onSaleComplete!(createdBill);
-        } else {
-          final rootCtx = rootNavigatorKey.currentContext;
-          if (rootCtx != null && rootCtx.mounted) {
-            showDialog(
-              context: rootCtx,
-              useRootNavigator: true,
-              barrierDismissible: false,
-              builder: (ctx) => SaleCompleteDialog(billId: billId),
-            );
-          }
-        }
-
-        // Clear cart
+        // Clear cart first so next order starts clean
         ref.read(cartProvider.notifier).clearCart();
 
         // Invalidate dashboard metrics & hourly sales trend so real-time updates reflect immediately
@@ -224,6 +186,22 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
         ref.invalidate(hourlySalesProvider);
         ref.invalidate(topProductsProvider);
         ref.invalidate(paymentBreakdownProvider);
+
+        // Close checkout sheet and return the created bill
+        Navigator.of(context).pop(createdBill);
+
+        // Immediately push SaleCompleteDialog onto root navigator
+        rootNavigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (ctx) => SaleCompleteDialog(
+              billId: createdBill.id,
+              initialBill: createdBill,
+            ),
+          ),
+        );
+
+        // Notify callback if attached
+        widget.onSaleComplete?.call(createdBill);
       }
     } catch (e, stackTrace) {
       await BackupLogService.addLog(
@@ -274,49 +252,54 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
     }.toList();
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Column(
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  tooltip: 'Back to Cart / POS',
-                  onPressed: () => Navigator.pop(context),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      tooltip: 'Back to Cart / POS',
+                      onPressed: () => Navigator.pop(context, 'back_to_cart'),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Checkout & Payment', style: AppTypography.heading3.copyWith(fontSize: 18)),
+                          Text(
+                            '${cart.itemCount} items • ${cart.totalUnits.toStringAsFixed(1)} units • ${Formatters.currency(cart.grandTotal, symbol: widget.currencySymbol)}',
+                            style: AppTypography.caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
+              ),
+              const Divider(height: 1),
+
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Checkout & Payment', style: AppTypography.heading3.copyWith(fontSize: 18)),
-                      Text(
-                        '${cart.itemCount} items • ${cart.totalUnits.toStringAsFixed(1)} units • ${Formatters.currency(cart.grandTotal, symbol: widget.currencySymbol)}',
-                        style: AppTypography.caption,
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  tooltip: 'Close to POS',
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
                 if (_errorMessage != null)
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -463,15 +446,33 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Cash Tendered', style: AppTypography.captionBold),
-                            Text(
-                              '${widget.currencySymbol} ${_cashTenderedController.text.isEmpty ? '0' : _cashTenderedController.text}',
-                              style: AppTypography.priceBold.copyWith(fontSize: 20),
-                            ),
-                          ],
+                        TextField(
+                          controller: _cashTenderedController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: AppTypography.priceBold.copyWith(fontSize: 20),
+                          decoration: InputDecoration(
+                            labelText: 'Cash Tendered',
+                            prefixText: '${widget.currencySymbol} ',
+                            prefixStyle: AppTypography.priceBold.copyWith(fontSize: 20),
+                            hintText: '0.00',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            suffixIcon: _cashTenderedController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear_rounded, size: 20),
+                                    onPressed: () {
+                                      _cashTenderedController.clear();
+                                      ref.read(cartProvider.notifier).setCashTendered(0.0);
+                                      setState(() {});
+                                    },
+                                  )
+                                : null,
+                          ),
+                          onChanged: (val) {
+                            final amt = double.tryParse(val) ?? 0.0;
+                            ref.read(cartProvider.notifier).setCashTendered(amt);
+                            setState(() {});
+                          },
                         ),
                         const SizedBox(height: 10),
 
@@ -532,10 +533,6 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-
-                        // Keypad for Cash Tendered
-                        _buildCashKeypad(isDark),
                       ],
                     ),
                   ),
@@ -759,55 +756,58 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
+                ),
+              ),
 
-          // Bottom Charge Button Bar
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-              border: Border(top: BorderSide(color: isDark ? AppColors.darkOutline : AppColors.lightOutline)),
-            ),
-            child: Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _isProcessing ? null : () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                  label: const Text('Back to Cart', style: TextStyle(fontWeight: FontWeight.w600)),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 52),
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+              // Bottom Charge Button Bar
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                  border: Border(top: BorderSide(color: isDark ? AppColors.darkOutline : AppColors.lightOutline)),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _isProcessing ? null : _completeSale,
-                    icon: _isProcessing
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Icon(Icons.check_circle_rounded),
-                    label: Text(
-                      _isProcessing
-                          ? 'Processing Sale...'
-                          : 'Complete • ${Formatters.currency(cart.grandTotal, symbol: widget.currencySymbol)}',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _isProcessing ? null : () => Navigator.pop(context, 'back_to_cart'),
+                      icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                      label: const Text('Back to Cart', style: TextStyle(fontWeight: FontWeight.w600)),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 52),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 52),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _isProcessing ? null : _completeSale,
+                        icon: _isProcessing
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.check_circle_rounded),
+                        label: Text(
+                          _isProcessing
+                              ? 'Processing Sale...'
+                              : 'Complete • ${Formatters.currency(cart.grandTotal, symbol: widget.currencySymbol)}',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 52),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -828,50 +828,6 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildCashKeypad(bool isDark) {
-    const keys = [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
-      ['7', '8', '9'],
-      ['.', '0', '⌫'],
-    ];
-
-    return Column(
-      children: keys.map((row) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(
-            children: row.map((char) {
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: InkWell(
-                    onTap: () => _onCashKeypadPress(char),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF262626) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: char == '⌫'
-                          ? const Icon(Icons.backspace_outlined, size: 18)
-                          : Text(
-                              char,
-                              style: AppTypography.priceMedium.copyWith(fontSize: 18),
-                            ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      }).toList(),
     );
   }
 }

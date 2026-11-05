@@ -149,6 +149,29 @@ class RecycleBinRepository {
     return items;
   }
 
+  Future<void> restoreBillById(int billId) async {
+    await _db.transaction(() async {
+      final bill = await (_db.select(_db.bills)..where((tbl) => tbl.id.equals(billId))).getSingle();
+      if (bill.paymentMode == 'Credit' && !bill.isCreditPaid && bill.customerId != null) {
+        final cust = await (_db.select(_db.customers)..where((tbl) => tbl.id.equals(bill.customerId!))).getSingleOrNull();
+        if (cust != null) {
+          await (_db.update(_db.customers)..where((tbl) => tbl.id.equals(cust.id))).write(
+            CustomersCompanion(
+              balance: Value(cust.balance + bill.grandTotal),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
+      }
+      await (_db.update(_db.bills)..where((tbl) => tbl.id.equals(billId))).write(
+        const BillsCompanion(
+          isDeleted: Value(false),
+          deletedAt: Value(null),
+        ),
+      );
+    });
+  }
+
   /// Restores a soft-deleted item
   Future<void> restoreItem(RecycleBinItem item) async {
     switch (item.type) {

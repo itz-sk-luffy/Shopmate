@@ -15,7 +15,6 @@ import '../../../core/widgets/custom_card.dart';
 import '../../../../core/utils/gst_calculator.dart';
 import '../../../core/services/launcher_icon_service.dart';
 import '../../pos/data/billing_repository.dart';
-import 'scale_barcode_settings_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -846,18 +845,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: const Text('Scanning the same item again increments quantity by 1 after debounce', style: AppTypography.caption),
                   value: _sameBarcodeAddsQuantity,
                   onChanged: (val) => setState(() => _sameBarcodeAddsQuantity = val),
-                ),
-                const Divider(),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.scale_rounded, color: AppColors.primaryTeal),
-                  title: const Text('Weighing Scale Barcode Stickers', style: AppTypography.bodyMedium),
-                  subtitle: const Text('Scan stickers printed by weighing scales (auto-reads weight & price)', style: AppTypography.caption),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ScaleBarcodeSettingsScreen()),
-                  ),
                 ),
                 const Divider(),
                 SwitchListTile(

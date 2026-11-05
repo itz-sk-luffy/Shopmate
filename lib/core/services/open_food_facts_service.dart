@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
+import '../utils/image_helper.dart';
 
 class OpenFoodFactsProduct {
   final String barcode;
@@ -239,21 +238,12 @@ class OpenFoodFactsService {
     return clean;
   }
 
-  /// Downloads and caches the product image locally
+  /// Downloads, center-crops to 1:1, and caches the product image locally
   static Future<String?> downloadAndCacheImage(String imageUrl, String barcode) async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final imagesDir = Directory(p.join(dir.path, 'product_images'));
-      if (!await imagesDir.exists()) {
-        await imagesDir.create(recursive: true);
-      }
-
-      final fileName = 'off_${barcode}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final savePath = p.join(imagesDir.path, fileName);
-
-      final response = await _dio.download(imageUrl, savePath);
-      if (response.statusCode == 200 && File(savePath).existsSync()) {
-        return savePath;
+      final savedPath = await ImageHelper.processAndSaveWebImage(imageUrl);
+      if (File(savedPath).existsSync()) {
+        return savedPath;
       }
     } catch (_) {}
     return null;

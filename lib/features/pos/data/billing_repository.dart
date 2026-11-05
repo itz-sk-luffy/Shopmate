@@ -16,9 +16,8 @@ class HeldBillEntry {
 
 class BillingRepository {
   final AppDatabase _db;
-  final Ref? _ref;
 
-  BillingRepository(this._db, [this._ref]);
+  BillingRepository(this._db, [Ref? _]);
 
   /// Computes the next sequential numeric suffix for a given prefix.
   /// next = max(numeric suffix of every bill_number with the current prefix across ALL rows
@@ -60,7 +59,6 @@ class BillingRepository {
 
           // Update next bill number setting in DB
           await _db.setSetting('bill_next_number', '${nextNum + 1}');
-          _ref?.read(settingsProvider.notifier).loadSettings();
 
           // 2. Insert into Bills
           final billCompanion = BillsCompanion.insert(

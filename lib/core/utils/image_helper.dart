@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -32,12 +33,56 @@ class ImageHelper {
         quality: 75,
         minWidth: 150,
         minHeight: 150,
+        keepExif: true,
         format: CompressFormat.jpeg,
       );
       return compressed?.path ?? sourcePath;
     } catch (e) {
       dev.log('[ImageHelper] Thumbnail generation warning: $e', name: 'ImageHelper');
       return sourcePath;
+    }
+  }
+
+  /// Automatically crops an image buffer into a 1:1 square ratio from the exact center.
+  /// If width != height, trims equal portions from left/right or top/bottom.
+  /// Also respects EXIF orientation and bounds max dimensions to 500x500 for optimal Poco C51 performance.
+  static Uint8List cropToSquareCenter(Uint8List bytes) {
+    try {
+      img.Image? decoded = img.decodeImage(bytes);
+      if (decoded == null) return bytes;
+
+      decoded = img.bakeOrientation(decoded);
+      final w = decoded.width;
+      final h = decoded.height;
+
+      img.Image cropped = decoded;
+      if (w != h) {
+        final cropSize = w < h ? w : h;
+        final x = (w - cropSize) ~/ 2;
+        final y = (h - cropSize) ~/ 2;
+        cropped = img.copyCrop(
+          decoded,
+          x: x,
+          y: y,
+          width: cropSize,
+          height: cropSize,
+        );
+      }
+
+      // Resize down to 500x500 max to keep memory footprint feather-light on budget phones like Poco C51
+      if (cropped.width > 500 || cropped.height > 500) {
+        cropped = img.copyResize(
+          cropped,
+          width: 500,
+          height: 500,
+          interpolation: img.Interpolation.average,
+        );
+      }
+
+      return Uint8List.fromList(img.encodeJpg(cropped, quality: 85));
+    } catch (e) {
+      dev.log('[ImageHelper] cropToSquareCenter error: $e', name: 'ImageHelper');
+      return bytes;
     }
   }
 
@@ -66,6 +111,7 @@ class ImageHelper {
         quality: 80,
         minWidth: 400,
         minHeight: 400,
+        keepExif: true,
         format: CompressFormat.jpeg,
       );
       savedPath = compressed?.path ?? targetPath;
@@ -158,6 +204,10 @@ class ImageHelper {
       dev.log('[ImageHelper] Downloaded ${rawBytes.length} bytes successfully.', name: 'ImageHelper');
     }
 
+    // Step 2.5: Automatically crop web image to 1:1 square ratio from center
+    dev.log('[ImageHelper] Step 2.5: Cropping web image 1:1 from center...', name: 'ImageHelper');
+    rawBytes = cropToSquareCenter(rawBytes);
+
     // Step 3: Compress image (native platform channel on main isolate)
     dev.log('[ImageHelper] Step 3: Compressing ${rawBytes.length} bytes to 400x400 JPEG...', name: 'ImageHelper');
     Uint8List compressedBytes;
@@ -167,6 +217,7 @@ class ImageHelper {
         quality: 80,
         minWidth: 400,
         minHeight: 400,
+        keepExif: true,
         format: CompressFormat.jpeg,
       );
       dev.log('[ImageHelper] Compressed to ${compressedBytes.length} bytes.', name: 'ImageHelper');

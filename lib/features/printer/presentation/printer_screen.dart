@@ -28,6 +28,7 @@ class _PrinterScreenState extends ConsumerState<PrinterScreen> {
 
   void _checkStatus() async {
     final service = ref.read(thermalPrinterServiceProvider);
+    await service.requestBluetoothPermissions();
     final isConn = await service.isConnected();
     if (isConn) {
       final db = ref.read(databaseProvider);
@@ -56,8 +57,13 @@ class _PrinterScreenState extends ConsumerState<PrinterScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? 'Connected to ${device.name}' : 'Could not connect to ${device.name}'),
+          content: Text(
+            success
+                ? 'Connected to ${device.name}'
+                : 'Could not connect to ${device.name}. Please ensure the printer is ON, paired in Android Settings, and not connected to another device.',
+          ),
           backgroundColor: success ? AppColors.successGreen : AppColors.errorRed,
+          duration: Duration(seconds: success ? 2 : 4),
         ),
       );
     }
