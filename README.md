@@ -306,10 +306,15 @@ All release builds can also be downloaded directly from [GitHub Releases](https:
 
 ## 12. Screenshots
 
-### 🛒 High-Speed POS & Catalog Operations
-| Cart & Counter Billing | Product Catalog & Categories | Day-End Register Closing |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/cart_screen.jpg" width="260" alt="Cart & Counter Billing" /><br><sub>*Tactile Cash Keypad & Quick Edit/Delete*</sub> | <img src="docs/screenshots/catalog_screen.jpg" width="260" alt="Product Catalog" /><br><sub>*Category Organization & Product Search*</sub> | <img src="docs/screenshots/day_closing.png" width="260" alt="Day-End Closing" /><br><sub>*Register Reconciliation & Swipe-to-Delete*</sub> |
+### 🛒 High-Speed POS Counter & Cart Operations
+| POS Billing Catalog (Grid) | Cart & Counter Billing |
+|:---:|:---:|
+| <img src="docs/screenshots/pos_billing.jpg" width="280" alt="POS Counter Grid" /><br><sub>*High-Speed Product Grid, Search & Category Filters*</sub> | <img src="docs/screenshots/cart_screen.jpg" width="280" alt="Cart & Counter Billing" /><br><sub>*Live Subtotal, Cash Shortcuts & Quick Edit/Delete*</sub> |
+
+### 📦 Catalog Management & Day-End Closing
+| Product Catalog Management | Day-End Register Closing |
+|:---:|:---:|
+| <img src="docs/screenshots/catalog_screen.jpg" width="280" alt="Product Catalog" /><br><sub>*Category Tags, Stock Organization & Barcode Sync*</sub> | <img src="docs/screenshots/day_closing.png" width="280" alt="Day-End Closing" /><br><sub>*Cash Drawer Reconciliation & Swipe-Left-to-Delete*</sub> |
 
 ### 🧾 Thermal Receipts, Tax Invoices & Ledger
 | 58 mm Bluetooth Thermal Receipt | A4 GST Tax Invoice (PDF) | Order Details & Audit Trail |
