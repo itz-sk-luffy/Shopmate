@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/providers/database_provider.dart';
 import '../data/expenses_repository.dart';
@@ -135,6 +136,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text('Store Expenses'),
       ),
       floatingActionButton: FloatingActionButton.extended(

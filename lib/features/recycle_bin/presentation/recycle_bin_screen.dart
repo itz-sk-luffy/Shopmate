@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/services/barcode_cache_service.dart';
 import '../../products/data/products_repository.dart';
@@ -150,6 +151,7 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text('Recycle Bin (30 Days)'),
         actions: [
           IconButton(

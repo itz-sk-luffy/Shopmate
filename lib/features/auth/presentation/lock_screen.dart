@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/widgets/keypad.dart';
+import '../../../core/widgets/safe_back_button.dart';
 
 class LockScreen extends ConsumerStatefulWidget {
   const LockScreen({super.key});
@@ -320,7 +321,10 @@ class _LockSettingsScreenState extends ConsumerState<LockSettingsScreen> {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Security & App Lock')),
+      appBar: AppBar(
+        leading: const SafeBackButton(),
+        title: const Text('Security & App Lock'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

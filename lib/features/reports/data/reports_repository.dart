@@ -41,6 +41,22 @@ class GstReportRow {
   });
 }
 
+class ItemWiseSalesRow {
+  final String productName;
+  final String unit;
+  final double quantitySold;
+  final double totalAmount;
+  final double averagePrice;
+
+  const ItemWiseSalesRow({
+    required this.productName,
+    required this.unit,
+    required this.quantitySold,
+    required this.totalAmount,
+    required this.averagePrice,
+  });
+}
+
 class ReportsRepository {
   final AppDatabase _db;
 
@@ -122,7 +138,7 @@ class ReportsRepository {
       );
     }
 
-    return map.entries.map((e) {
+    final allRows = map.entries.map((e) {
       return GstReportRow(
         gstRate: e.key,
         taxableAmount: e.value.base,
@@ -131,6 +147,45 @@ class ReportsRepository {
         totalTax: e.value.totalTax,
       );
     }).toList();
+
+    final nonZero = allRows.where((r) => r.taxableAmount > 0 || r.totalTax > 0).toList();
+    return nonZero.isNotEmpty ? nonZero : allRows;
+  }
+
+  Future<List<ItemWiseSalesRow>> getItemWiseSummary(DateTime start, DateTime end) async {
+    final bills = await (_db.select(_db.bills)
+          ..where((tbl) => tbl.isDeleted.equals(false) & tbl.isHeld.equals(false))
+          ..where((tbl) => tbl.date.isBiggerOrEqualValue(start) & tbl.date.isSmallerOrEqualValue(end)))
+        .get();
+
+    if (bills.isEmpty) return [];
+
+    final billIds = bills.map((b) => b.id).toList();
+    final items = await (_db.select(_db.billItems)..where((tbl) => tbl.billId.isIn(billIds))).get();
+
+    final Map<String, ({String unit, double qty, double amount})> map = {};
+    for (final it in items) {
+      final cur = map[it.productName] ?? (unit: it.unit, qty: 0.0, amount: 0.0);
+      map[it.productName] = (
+        unit: it.unit,
+        qty: cur.qty + it.quantity,
+        amount: cur.amount + it.totalAmount,
+      );
+    }
+
+    final list = map.entries.map((e) {
+      final avg = e.value.qty > 0 ? (e.value.amount / e.value.qty) : 0.0;
+      return ItemWiseSalesRow(
+        productName: e.key,
+        unit: e.value.unit,
+        quantitySold: e.value.qty,
+        totalAmount: e.value.amount,
+        averagePrice: avg,
+      );
+    }).toList();
+
+    list.sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+    return list;
   }
 
   Future<void> shareDayWiseCsv(List<DayWiseSalesRow> rows) async {
@@ -145,6 +200,20 @@ class ReportsRepository {
     await file.writeAsString(buffer.toString());
 
     await Share.shareXFiles([XFile(file.path)], text: 'Day-wise Sales Report');
+  }
+
+  Future<void> shareItemWiseCsv(List<ItemWiseSalesRow> rows) async {
+    final buffer = StringBuffer();
+    buffer.writeln('Product Name,Unit,Quantity Sold,Average Price,Total Amount');
+    for (final r in rows) {
+      buffer.writeln('"${r.productName.replaceAll('"', '""')}",${r.unit},${r.quantitySold},${r.averagePrice.toStringAsFixed(2)},${r.totalAmount.toStringAsFixed(2)}');
+    }
+
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/Item_Sales_Report_${DateTime.now().millisecondsSinceEpoch}.csv');
+    await file.writeAsString(buffer.toString());
+
+    await Share.shareXFiles([XFile(file.path)], text: 'Item Sales Report');
   }
 
   Future<void> shareGstCsv(List<GstReportRow> rows) async {

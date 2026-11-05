@@ -15,6 +15,8 @@ import '../../../core/services/open_food_facts_service.dart';
 import '../../../core/utils/barcode_utils.dart';
 import '../../../core/utils/image_helper.dart';
 import '../../../core/widgets/custom_card.dart';
+import '../../../core/routing/app_routes.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../data/products_repository.dart';
 import 'web_image_picker_screen.dart';
 
@@ -349,6 +351,7 @@ class _ProductEditScreenState extends ConsumerState<ProductEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(fallbackRoute: AppRoutes.products),
         title: Text(isEditing ? 'Edit Product' : 'Add Product'),
         actions: [
           IconButton(

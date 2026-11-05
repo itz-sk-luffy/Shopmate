@@ -9,6 +9,8 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/routing/app_routes.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../data/products_repository.dart';
 
 class BulkLabelPrintScreen extends ConsumerStatefulWidget {
@@ -119,6 +121,7 @@ class _BulkLabelPrintScreenState extends ConsumerState<BulkLabelPrintScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(fallbackRoute: AppRoutes.products),
         title: const Text('Bulk Barcode Labels (58 mm)'),
       ),
       body: FutureBuilder<List<Product>>(

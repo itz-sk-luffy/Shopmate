@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/safe_back_button.dart';
+import '../../../core/routing/app_routes.dart';
 import '../services/backup_log_service.dart';
 
 class BackupLogScreen extends StatefulWidget {
@@ -104,6 +106,7 @@ class _BackupLogScreenState extends State<BackupLogScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(fallbackRoute: AppRoutes.backup),
         title: const Text('Backup & Restore Logs'),
         actions: [
           IconButton(

@@ -5,7 +5,7 @@
 [![Architecture](https://img.shields.io/badge/Architecture-Feature--First%20%2F%20Clean-teal)](#6-system-architecture)
 [![Database](https://img.shields.io/badge/Database-Drift%20SQLite%20(Offline)-blue)](https://drift.simonbinder.eu)
 [![Release](https://img.shields.io/badge/Release-v1.0.0%20(APKs)-blue)](https://github.com/itz-sk-luffy/Shopmate/releases/tag/v1.0.0)
-[![Tests](https://img.shields.io/badge/Tests-93%20Passed-brightgreen)](#10-project-setup-instructions)
+[![Tests](https://img.shields.io/badge/Tests-97%20Passed-brightgreen)](#10-project-setup-instructions)
 [![Package](https://img.shields.io/badge/Package-com.shopmate.pos-indigo)](#15-developer-information)
 [![Version](https://img.shields.io/badge/Version-1.0.0%2B1-orange)](#15-developer-information)
 
@@ -338,7 +338,7 @@ Shopmate/
 │   ├── core/                   # Shared architectural core (DB, theme, routing)
 │   ├── features/               # Modular business feature packages
 │   └── main.dart               # Bootstrap entry point and orientation lock
-├── test/                       # Unit and widget test suite (93 tests)
+├── test/                       # Unit and widget test suite (97 tests)
 ├── .gitignore                  # Git ignore rules for Flutter & Android
 ├── analysis_options.yaml       # Dart analyzer rules
 ├── pubspec.yaml                # Package manifest and dependencies

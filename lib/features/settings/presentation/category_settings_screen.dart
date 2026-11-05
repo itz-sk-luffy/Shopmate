@@ -5,6 +5,8 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/routing/app_routes.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/widgets/custom_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../products/data/products_repository.dart';
@@ -218,6 +220,7 @@ class _CategorySettingsScreenState extends ConsumerState<CategorySettingsScreen>
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(fallbackRoute: AppRoutes.settings),
         title: const Text('Manage Categories'),
         actions: [
           IconButton(

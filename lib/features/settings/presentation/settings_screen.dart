@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/routing/app_routes.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/providers/database_provider.dart';
@@ -261,6 +262,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text('Settings & Profile'),
         actions: [
           IconButton(
@@ -849,8 +851,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.scale_rounded, color: AppColors.primaryTeal),
-                  title: const Text('Weighing Scale Labels', style: AppTypography.bodyMedium),
-                  subtitle: const Text('Prefix, SKU length, embedded weight/price parsing & test', style: AppTypography.caption),
+                  title: const Text('Weighing Scale Barcode Stickers', style: AppTypography.bodyMedium),
+                  subtitle: const Text('Scan stickers printed by weighing scales (auto-reads weight & price)', style: AppTypography.caption),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.push(
                     context,

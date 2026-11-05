@@ -34,6 +34,7 @@ class AppSettingsState {
   String get storeLicense => get('store_license', '');
   String get storeFooter => get('store_footer', 'Thank you for shopping with us! Visit again.');
   String get logoPath => get('store_logo_path', '');
+  String get storeLogoPath => logoPath;
 
   // Bill numbering & Tax
   String get billPrefix => get('bill_prefix', 'INV-');

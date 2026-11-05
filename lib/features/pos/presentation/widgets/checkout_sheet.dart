@@ -283,16 +283,21 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+            padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  tooltip: 'Back to Cart / POS',
+                  onPressed: () => Navigator.pop(context),
+                ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Checkout & Payment', style: AppTypography.heading3.copyWith(fontSize: 18)),
                       Text(
-                        '${cart.itemCount} items • ${cart.totalUnits.toStringAsFixed(1)} units',
+                        '${cart.itemCount} items • ${cart.totalUnits.toStringAsFixed(1)} units • ${Formatters.currency(cart.grandTotal, symbol: widget.currencySymbol)}',
                         style: AppTypography.caption,
                       ),
                     ],
@@ -300,6 +305,7 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
+                  tooltip: 'Close to POS',
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -765,21 +771,40 @@ class _CheckoutSheetState extends ConsumerState<CheckoutSheet> {
               color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
               border: Border(top: BorderSide(color: isDark ? AppColors.darkOutline : AppColors.lightOutline)),
             ),
-            child: FilledButton.icon(
-              onPressed: _isProcessing ? null : _completeSale,
-              icon: _isProcessing
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Icon(Icons.check_circle_rounded),
-              label: Text(
-                _isProcessing
-                    ? 'Processing Sale...'
-                    : 'Complete Sale • ${Formatters.currency(cart.grandTotal, symbol: widget.currencySymbol)}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+            child: Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _isProcessing ? null : () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                  label: const Text('Back to Cart', style: TextStyle(fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 52),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _isProcessing ? null : _completeSale,
+                    icon: _isProcessing
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.check_circle_rounded),
+                    label: Text(
+                      _isProcessing
+                          ? 'Processing Sale...'
+                          : 'Complete • ${Formatters.currency(cart.grandTotal, symbol: widget.currencySymbol)}',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 52),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

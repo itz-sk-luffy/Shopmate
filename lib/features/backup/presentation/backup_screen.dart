@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/routing/app_routes.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/providers/database_provider.dart';
@@ -348,6 +349,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text('Backup & Restore'),
         actions: [
           IconButton(

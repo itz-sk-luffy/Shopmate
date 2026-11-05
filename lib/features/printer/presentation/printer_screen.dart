@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/providers/database_provider.dart';
 import '../services/thermal_printer_service.dart';
 
@@ -102,6 +103,7 @@ class _PrinterScreenState extends ConsumerState<PrinterScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text('Thermal Printer (58 mm)'),
         actions: [
           IconButton(

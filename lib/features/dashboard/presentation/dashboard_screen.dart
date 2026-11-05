@@ -341,7 +341,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             }
 
                             final spots = points.map((p) => FlSpot(p.hour.toDouble(), p.amount)).toList();
-                            final maxY = points.fold(100.0, (acc, p) => max(acc, p.amount * 1.2));
+                            final maxAmount = points.fold(0.0, (acc, p) => max(acc, p.amount));
+                            final maxY = max(maxAmount * 1.25, 50.0);
                             final intervalY = (maxY / 4).clamp(1.0, double.infinity);
 
                             return RepaintBoundary(
@@ -357,7 +358,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       getTooltipColor: (_) => theme.colorScheme.primary,
                                       getTooltipItems: (touchedSpots) {
                                         return touchedSpots.map((spot) {
-                                          final idx = spot.x.toInt();
+                                          final idx = spot.x.round();
                                           final match = points.where((p) => p.hour == idx);
                                           final lbl = match.isNotEmpty ? match.first.label : '$idx';
                                           return LineTooltipItem(
@@ -399,7 +400,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         showTitles: true,
                                         interval: range == 'This Month' ? 5 : (range == 'This Week' ? 1 : 3),
                                         getTitlesWidget: (val, _) {
-                                          final idx = val.toInt();
+                                          final idx = val.round();
                                           final match = points.where((p) => p.hour == idx);
                                           final lbl = match.isNotEmpty ? match.first.label : '';
                                           if (lbl.isEmpty) return const SizedBox.shrink();
@@ -419,6 +420,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     LineChartBarData(
                                       spots: spots,
                                       isCurved: range != 'This Month',
+                                      preventCurveOverShooting: true,
                                       color: theme.colorScheme.primary,
                                       barWidth: 3,
                                       isStrokeCapRound: true,

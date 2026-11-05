@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/routing/app_routes.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../orders/data/orders_repository.dart';
 import '../data/customers_repository.dart';
 
 class CustomerDetailScreen extends ConsumerStatefulWidget {
@@ -211,6 +213,64 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
     Share.share(msg, subject: 'Payment Reminder - ${settings.storeName}');
   }
 
+  void _deleteCustomer() async {
+    if (_customer == null) return;
+    final cust = _customer!;
+    final settings = ref.read(settingsProvider);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Customer?'),
+        content: Text(
+          cust.balance > 0
+              ? '${cust.name} has a pending Udhaar balance of ${Formatters.currency(cust.balance, symbol: settings.currencySymbol)}.\n\nAre you sure you want to delete this customer?'
+              : 'Are you sure you want to delete "${cust.name}" from the customer ledger?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.errorRed),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final repo = ref.read(customersRepositoryProvider);
+      await repo.deleteCustomer(cust.id);
+      ref.invalidate(customersStreamProvider);
+      if (mounted) {
+        context.pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleted customer "${cust.name}"'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                await repo.addCustomer(
+                  CustomersCompanion(
+                    id: drift.Value(cust.id),
+                    name: drift.Value(cust.name),
+                    phone: drift.Value(cust.phone),
+                    balance: drift.Value(cust.balance),
+                    createdAt: drift.Value(cust.createdAt),
+                  ),
+                );
+                ref.invalidate(customersStreamProvider);
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -235,12 +295,18 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(fallbackRoute: AppRoutes.customers),
         title: Text(cust.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.share_rounded),
             tooltip: 'Send Payment Reminder',
             onPressed: _sendPaymentReminder,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.errorRed),
+            tooltip: 'Delete Customer',
+            onPressed: _deleteCustomer,
           ),
         ],
       ),
@@ -462,6 +528,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Purchase History (${_customerBills.length})', style: AppTypography.captionBold),
+              if (_customerBills.isNotEmpty)
+                Text('Swipe left to delete', style: AppTypography.caption.copyWith(fontSize: 11)),
             ],
           ),
           const SizedBox(height: 8),
@@ -484,38 +552,87 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final bill = _customerBills[index];
-                return Card(
-                  margin: EdgeInsets.zero,
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-                      child: Icon(Icons.receipt_long_outlined, color: theme.colorScheme.primary),
+                return Dismissible(
+                  key: ValueKey('cust_bill_${bill.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorRed,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    title: Text(bill.billNumber, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                      '${Formatters.date(bill.date)} • ${bill.paymentMode}',
-                      style: AppTypography.caption,
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        Icon(Icons.delete_rounded, color: Colors.white),
+                        SizedBox(width: 8),
                         Text(
-                          Formatters.currency(bill.grandTotal, symbol: settings.currencySymbol),
-                          style: AppTypography.priceBold.copyWith(fontSize: 14),
+                          'Delete',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         ),
-                        if (bill.paymentMode == 'Credit')
-                          Text(
-                            bill.isCreditPaid ? 'Paid' : 'Unpaid Udhaar',
-                            style: AppTypography.caption.copyWith(
-                              fontSize: 10,
-                              color: bill.isCreditPaid ? AppColors.successGreen : AppColors.errorRed,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                       ],
                     ),
-                    onTap: () => context.push(AppRoutes.orderDetailPath(bill.id)),
+                  ),
+                  confirmDismiss: (_) async {
+                    return await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Move to Recycle Bin?'),
+                        content: Text('Delete ${bill.billNumber}? It can be restored within 30 days.'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                          FilledButton(
+                            style: FilledButton.styleFrom(backgroundColor: AppColors.errorRed),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onDismissed: (_) async {
+                    await ref.read(ordersRepositoryProvider).softDeleteBill(bill.id);
+                    _loadData();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Moved ${bill.billNumber} to Recycle Bin')),
+                      );
+                    }
+                  },
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                        child: Icon(Icons.receipt_long_outlined, color: theme.colorScheme.primary),
+                      ),
+                      title: Text(bill.billNumber, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                        '${Formatters.date(bill.date)} • ${bill.paymentMode}',
+                        style: AppTypography.caption,
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            Formatters.currency(bill.grandTotal, symbol: settings.currencySymbol),
+                            style: AppTypography.priceBold.copyWith(fontSize: 14),
+                          ),
+                          if (bill.paymentMode == 'Credit')
+                            Text(
+                              bill.isCreditPaid ? 'Paid' : 'Unpaid Udhaar',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 10,
+                                color: bill.isCreditPaid ? AppColors.successGreen : AppColors.errorRed,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
+                      ),
+                      onTap: () => context.push(AppRoutes.orderDetailPath(bill.id)),
+                    ),
                   ),
                 );
               },

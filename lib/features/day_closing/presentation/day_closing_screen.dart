@@ -4,6 +4,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../printer/services/receipt_actions.dart';
 import '../data/day_closing_repository.dart';
@@ -185,6 +186,7 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text('Day-End Closing & Register'),
       ),
       body: summaryAsync.when(

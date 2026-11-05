@@ -210,50 +210,54 @@ class CartItemsSheet extends ConsumerWidget {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+            padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text('Current Cart', style: AppTypography.heading3.copyWith(fontSize: 18)),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${cart.itemCount} items',
-                        style: AppTypography.captionBold.copyWith(color: theme.colorScheme.primary),
-                      ),
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  tooltip: 'Back to POS Catalog',
+                  onPressed: () => Navigator.pop(context),
                 ),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => _openCustomItemDialog(context, ref),
-                      icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
-                      label: const Text('Add Item'),
-                    ),
-                    const SizedBox(width: 2),
-                    TextButton.icon(
-                      onPressed: cart.items.isEmpty
-                          ? null
-                          : () {
-                              ref.read(cartProvider.notifier).clearCart();
-                              Navigator.pop(context);
-                            },
-                      icon: const Icon(Icons.delete_sweep_rounded, size: 18),
-                      label: const Text('Clear'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text('Current Cart', style: AppTypography.heading3.copyWith(fontSize: 18)),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${cart.itemCount} items',
+                          style: AppTypography.captionBold.copyWith(color: theme.colorScheme.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _openCustomItemDialog(context, ref),
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
+                  label: const Text('Add Item', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                ),
+                TextButton.icon(
+                  onPressed: cart.items.isEmpty
+                      ? null
+                      : () {
+                          ref.read(cartProvider.notifier).clearCart();
+                          Navigator.pop(context);
+                        },
+                  icon: const Icon(Icons.delete_sweep_rounded, size: 16),
+                  label: const Text('Clear', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  tooltip: 'Close Cart',
+                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
@@ -613,33 +617,46 @@ class CartItemsSheet extends ConsumerWidget {
                     ),
                   ],
                   const SizedBox(height: 10),
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        builder: (ctx) => CheckoutSheet(currencySymbol: currencySymbol),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Total: ${Formatters.currency(cart.grandTotal, symbol: currencySymbol)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const Row(
-                          children: [
-                            Text('Proceed to Pay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            SizedBox(width: 6),
-                            Icon(Icons.arrow_forward_rounded, size: 18),
-                          ],
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                          label: const Text('+ Add Items', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 3,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (ctx) => CheckoutSheet(currencySymbol: currencySymbol),
+                            );
+                          },
+                          icon: const Icon(Icons.payment_rounded, size: 18),
+                          label: Text(
+                            'Pay ${Formatters.currency(cart.grandTotal, symbol: currencySymbol)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

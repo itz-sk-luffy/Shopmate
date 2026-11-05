@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_routes.dart';
+import '../../../core/widgets/safe_back_button.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -108,6 +109,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const SafeBackButton(),
         title: const Text('Customers & Udhaar Ledger'),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -225,6 +227,18 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                       ),
                     ),
 
+                    // Gesture Hint
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${filtered.length} customer(s)', style: AppTypography.caption),
+                          Text('Swipe left to delete', style: AppTypography.caption.copyWith(fontSize: 11)),
+                        ],
+                      ),
+                    ),
+
                     // Customers List
                     Expanded(
                       child: ListView.separated(
@@ -237,58 +251,131 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         itemBuilder: (context, index) {
                           final cust = filtered[index];
 
-                          return RepaintBoundary(
-                            child: Card(
-                            margin: EdgeInsets.zero,
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: cust.balance > 0
-                                    ? AppColors.errorRed.withValues(alpha: 0.12)
-                                    : theme.colorScheme.primary.withValues(alpha: 0.1),
-                                child: Text(
-                                  cust.name.isNotEmpty ? cust.name[0].toUpperCase() : '?',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: cust.balance > 0 ? AppColors.errorRed : theme.colorScheme.primary,
-                                  ),
-                                ),
+                          return Dismissible(
+                            key: ValueKey('customer_${cust.id}'),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              decoration: BoxDecoration(
+                                color: AppColors.errorRed,
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              title: Text(
-                                cust.name,
-                                style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                cust.phone ?? 'No phone number',
-                                style: AppTypography.caption,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  Icon(Icons.delete_sweep_rounded, color: Colors.white),
+                                  SizedBox(width: 8),
                                   Text(
-                                    Formatters.currency(cust.balance, symbol: settings.currencySymbol),
-                                    style: AppTypography.priceBold.copyWith(
-                                      fontSize: 15,
-                                      color: cust.balance > 0
-                                          ? AppColors.errorRed
-                                          : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                    'Delete',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  if (cust.balance > 0)
-                                    Text(
-                                      'Udhaar',
-                                      style: AppTypography.captionBold.copyWith(color: AppColors.errorRed, fontSize: 10),
-                                    ),
                                 ],
                               ),
-                              onTap: () => context.push(AppRoutes.customerDetailPath(cust.id)),
                             ),
-                          ),
-                        );
+                            confirmDismiss: (_) async {
+                              return await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Delete Customer?'),
+                                  content: Text(
+                                    cust.balance > 0
+                                        ? '${cust.name} has a pending Udhaar balance of ${Formatters.currency(cust.balance, symbol: settings.currencySymbol)}.\n\nAre you sure you want to delete this customer?'
+                                        : 'Are you sure you want to delete "${cust.name}" from the customer ledger?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      style: FilledButton.styleFrom(backgroundColor: AppColors.errorRed),
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            onDismissed: (_) async {
+                              final repo = ref.read(customersRepositoryProvider);
+                              await repo.deleteCustomer(cust.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Deleted customer "${cust.name}"'),
+                                    action: SnackBarAction(
+                                      label: 'Undo',
+                                      onPressed: () async {
+                                        await repo.addCustomer(
+                                          CustomersCompanion(
+                                            id: drift.Value(cust.id),
+                                            name: drift.Value(cust.name),
+                                            phone: drift.Value(cust.phone),
+                                            balance: drift.Value(cust.balance),
+                                            createdAt: drift.Value(cust.createdAt),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Card(
+                              margin: EdgeInsets.zero,
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: cust.balance > 0
+                                      ? AppColors.errorRed.withValues(alpha: 0.12)
+                                      : theme.colorScheme.primary.withValues(alpha: 0.1),
+                                  child: Text(
+                                    cust.name.isNotEmpty ? cust.name[0].toUpperCase() : '?',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: cust.balance > 0 ? AppColors.errorRed : theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  cust.name,
+                                  style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  cust.phone ?? 'No phone number',
+                                  style: AppTypography.caption,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      Formatters.currency(cust.balance, symbol: settings.currencySymbol),
+                                      style: AppTypography.priceBold.copyWith(
+                                        fontSize: 15,
+                                        color: cust.balance > 0
+                                            ? AppColors.errorRed
+                                            : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                      ),
+                                    ),
+                                    if (cust.balance > 0)
+                                      Text(
+                                        'Udhaar',
+                                        style: AppTypography.captionBold.copyWith(color: AppColors.errorRed, fontSize: 10),
+                                      ),
+                                  ],
+                                ),
+                                onTap: () => context.push(AppRoutes.customerDetailPath(cust.id)),
+                              ),
+                            ),
+                          );
                         },
                       ),
                     ),

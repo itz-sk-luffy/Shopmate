@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,20 +29,30 @@ class MoreScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    'assets/launcher_icons/launcher_${settings.launcherIconPreset}.png',
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                      'assets/icons/app_icon.png',
-                      width: 52,
-                      height: 52,
-                      fit: BoxFit.cover,
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      width: 1.5,
                     ),
                   ),
+                  child: settings.storeLogoPath.isNotEmpty && File(settings.storeLogoPath).existsSync()
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(
+                            File(settings.storeLogoPath),
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Icon(
+                          Icons.store_rounded,
+                          size: 30,
+                          color: theme.colorScheme.primary,
+                        ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(

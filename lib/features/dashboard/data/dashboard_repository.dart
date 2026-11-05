@@ -163,8 +163,14 @@ class DashboardRepository {
         label: '${e.key}',
       )).toList();
     } else {
-      // Today: cover hours 6 AM to 11 PM (6 to 23), including any other hours if sales exist
-      final Map<int, double> hourlyMap = {for (int h = 6; h <= 23; h++) h: 0.0};
+      // Today: cover hours 6 AM to 11 PM (or earlier/later if sales occurred)
+      int minHour = 6;
+      int maxHour = 23;
+      for (final b in bills) {
+        if (b.date.hour < minHour) minHour = b.date.hour;
+        if (b.date.hour > maxHour) maxHour = b.date.hour;
+      }
+      final Map<int, double> hourlyMap = {for (int h = minHour; h <= maxHour; h++) h: 0.0};
       for (final b in bills) {
         final hour = b.date.hour;
         hourlyMap[hour] = (hourlyMap[hour] ?? 0.0) + b.grandTotal;
