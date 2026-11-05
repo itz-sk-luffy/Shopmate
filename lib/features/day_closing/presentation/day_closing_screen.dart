@@ -64,6 +64,70 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
     }
   }
 
+  void _showPrintOptionsSheet(DayClosing closing) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Day Closing Summary',
+                      style: AppTypography.heading3,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                Text(
+                  Formatters.dateTime(closing.closedAt),
+                  style: AppTypography.caption,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  icon: const Icon(Icons.print_rounded),
+                  label: const Text('Print 58 mm Thermal Summary'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    ref.read(receiptActionsProvider).printDayClosingThermal(closing, context: context);
+                  },
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.picture_as_pdf_rounded),
+                  label: const Text('Preview / Print as PDF'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    ref.read(receiptActionsProvider).showDayClosing58mmPdfSheet(closing, context: context);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showClosingSuccessDialog(DayClosing closing) {
     showDialog(
       context: context,
@@ -95,11 +159,12 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
           ],
         ),
         actions: [
-          IconButton(
+          OutlinedButton.icon(
             icon: const Icon(Icons.print_rounded),
-            tooltip: 'Print 58 mm Summary',
-            onPressed: () async {
-              await ref.read(receiptActionsProvider).printDayClosingThermal(closing, context: ctx);
+            label: const Text('Print / PDF'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showPrintOptionsSheet(closing);
             },
           ),
           FilledButton(
@@ -282,6 +347,7 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Past Day Closings', style: AppTypography.captionBold),
+                  Text('Swipe left to delete', style: AppTypography.caption),
                 ],
               ),
               const SizedBox(height: 8),
@@ -304,34 +370,106 @@ class _DayClosingScreenState extends ConsumerState<DayClosingScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: 6),
                     itemBuilder: (context, index) {
                       final c = closings[index];
-                      return Card(
-                        margin: EdgeInsets.zero,
-                        child: ListTile(
-                          title: Text(Formatters.dateTime(c.closedAt), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
-                          subtitle: Text(
-                            'Counted: ${Formatters.currency(c.countedCash, symbol: settings.currencySymbol)} • Exp: ${Formatters.currency(c.expectedCash, symbol: settings.currencySymbol)}',
-                            style: AppTypography.caption,
+                      return Dismissible(
+                        key: ValueKey('day_closing_${c.id}'),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorRed,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Text(
-                                '${c.difference >= 0 ? '+' : ''}${Formatters.currency(c.difference, symbol: settings.currencySymbol)}',
-                                style: AppTypography.priceBold.copyWith(
-                                  fontSize: 13,
-                                  color: c.difference == 0
-                                      ? AppColors.successGreen
-                                      : (c.difference < 0 ? AppColors.errorRed : Colors.blue),
+                                'Delete',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.print_rounded, size: 20),
-                                tooltip: 'Print Receipt',
-                                onPressed: () {
-                                  ref.read(dayClosingRepositoryProvider).printDayEndReceipt(c);
-                                },
-                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
                             ],
+                          ),
+                        ),
+                        confirmDismiss: (direction) async {
+                          return await showDialog<bool>(
+                            context: context,
+                            builder: (dialogCtx) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.delete_forever_rounded, color: AppColors.errorRed),
+                                  SizedBox(width: 8),
+                                  Text('Delete Closing Record?'),
+                                ],
+                              ),
+                              content: Text(
+                                'Are you sure you want to delete the day closing record for ${Formatters.dateTime(c.closedAt)}?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(dialogCtx, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                FilledButton(
+                                  style: FilledButton.styleFrom(backgroundColor: AppColors.errorRed),
+                                  onPressed: () => Navigator.pop(dialogCtx, true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        onDismissed: (direction) async {
+                          final repo = ref.read(dayClosingRepositoryProvider);
+                          await repo.deleteDayClosing(c.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Deleted closing record for ${Formatters.date(c.closedAt)}'),
+                                action: SnackBarAction(
+                                  label: 'Undo',
+                                  onPressed: () async {
+                                    await repo.restoreDayClosing(c);
+                                  },
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Card(
+                          margin: EdgeInsets.zero,
+                          child: ListTile(
+                            onTap: () => _showPrintOptionsSheet(c),
+                            title: Text(Formatters.dateTime(c.closedAt), style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold)),
+                            subtitle: Text(
+                              'Counted: ${Formatters.currency(c.countedCash, symbol: settings.currencySymbol)} • Exp: ${Formatters.currency(c.expectedCash, symbol: settings.currencySymbol)}',
+                              style: AppTypography.caption,
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${c.difference >= 0 ? '+' : ''}${Formatters.currency(c.difference, symbol: settings.currencySymbol)}',
+                                  style: AppTypography.priceBold.copyWith(
+                                    fontSize: 13,
+                                    color: c.difference == 0
+                                        ? AppColors.successGreen
+                                        : (c.difference < 0 ? AppColors.errorRed : Colors.blue),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.print_rounded, size: 20),
+                                  tooltip: 'Print or Preview Summary',
+                                  onPressed: () => _showPrintOptionsSheet(c),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shopmate/core/database/app_database.dart';
 
 void main() {
   group('Day-End Closing & Register Reconciliation Math Test', () {
@@ -41,6 +42,25 @@ void main() {
 
       final daysRemainingForRecent = recentItemDate.add(const Duration(days: 30)).difference(now).inDays;
       expect(daysRemainingForRecent, 20);
+    });
+
+    test('Day Closing delete and restore model verification', () {
+      final closing = DayClosing(
+        id: 1,
+        date: DateTime.now(),
+        openingCash: 500,
+        cashSales: 1500,
+        returnsAmount: 0,
+        cashExpenses: 200,
+        expectedCash: 1800,
+        countedCash: 1800,
+        difference: 0,
+        closedAt: DateTime.now(),
+      );
+
+      expect(closing.id, 1);
+      expect(closing.expectedCash, 1800);
+      expect(closing.difference, 0);
     });
   });
 }

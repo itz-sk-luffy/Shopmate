@@ -98,9 +98,31 @@ class DayClosingRepository {
         .watch();
   }
 
+  Future<int> deleteDayClosing(int id) async {
+    return (_db.delete(_db.dayClosings)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
+  Future<int> restoreDayClosing(DayClosing closing) async {
+    return _db.into(_db.dayClosings).insertOnConflictUpdate(
+      DayClosingsCompanion(
+        id: Value(closing.id),
+        date: Value(closing.date),
+        openingCash: Value(closing.openingCash),
+        cashSales: Value(closing.cashSales),
+        returnsAmount: Value(closing.returnsAmount),
+        cashExpenses: Value(closing.cashExpenses),
+        expectedCash: Value(closing.expectedCash),
+        countedCash: Value(closing.countedCash),
+        difference: Value(closing.difference),
+        notes: Value(closing.notes),
+        closedAt: Value(closing.closedAt),
+      ),
+    );
+  }
+
   Future<bool> printDayEndReceipt(DayClosing closing) async {
     final printer = _ref.read(thermalPrinterServiceProvider);
-    final isConn = await printer.isConnected();
+    final isConn = await printer.ensureConnected();
     if (!isConn) return false;
 
     final settings = _ref.read(settingsProvider);
