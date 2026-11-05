@@ -4,7 +4,8 @@
 [![Dart](https://img.shields.io/badge/Dart-3.5+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Architecture](https://img.shields.io/badge/Architecture-Feature--First%20%2F%20Clean-teal)](#6-system-architecture)
 [![Database](https://img.shields.io/badge/Database-Drift%20SQLite%20(Offline)-blue)](https://drift.simonbinder.eu)
-[![Tests](https://img.shields.io/badge/Tests-92%20Passed-brightgreen)](#10-project-setup-instructions)
+[![Release](https://img.shields.io/badge/Release-v1.0.0%20(APKs)-blue)](https://github.com/itz-sk-luffy/Shopmate/releases/tag/v1.0.0)
+[![Tests](https://img.shields.io/badge/Tests-93%20Passed-brightgreen)](#10-project-setup-instructions)
 [![Package](https://img.shields.io/badge/Package-com.shopmate.pos-indigo)](#15-developer-information)
 [![Version](https://img.shields.io/badge/Version-1.0.0%2B1-orange)](#15-developer-information)
 
@@ -280,29 +281,45 @@ To test true 60 FPS performance and hardware bindings on a physical device:
 flutter run --release
 ```
 
-### Building Split-per-ABI Release APKs
-Generate optimized, low-footprint Android APK packages:
+### Building Release APKs
+
+#### 1. Split-per-ABI Release APKs (Recommended for Production)
+Generate optimized, low-footprint Android APK packages under 25 MB:
 ```bash
 flutter build apk --release --split-per-abi
 ```
-Generated APK files will be located in `build/app/outputs/flutter-apk/`:
-- `app-armeabi-v7a-release.apk` (~22.6 MB) — *Recommended for entry-level 32-bit devices*
-- `app-arm64-v8a-release.apk` (~23.1 MB) — *Recommended for standard 64-bit devices*
-- `app-x86_64-release.apk` (~23.4 MB) — *Recommended for x86_64 tablets / emulators*
+Generated files in `build/app/outputs/flutter-apk/`:
+- `app-armeabi-v7a-release.apk` (21.8 MB) — *Optimized for entry-level devices (Poco C51, Android Go)*
+- `app-arm64-v8a-release.apk` (22.3 MB) — *Recommended for standard 64-bit devices*
+- `app-x86_64-release.apk` (23.0 MB) — *For Android emulators & x86_64 tablets*
+
+#### 2. Universal Release APK (All-in-One)
+Generate a single universal APK compatible with all Android architectures:
+```bash
+flutter build apk --release
+```
+Generated file: `build/app/outputs/flutter-apk/app-release.apk` (46.8 MB)
+
+All release builds can also be downloaded directly from [GitHub Releases](https://github.com/itz-sk-luffy/Shopmate/releases/tag/v1.0.0).
 
 ---
 
 ## 12. Screenshots
 
-| Point of Sale (POS) | Product Catalog | Cart & Checkout |
+### 🛒 High-Speed POS & Catalog Operations
+| Cart & Counter Billing | Product Catalog & Categories | Day-End Register Closing |
 |:---:|:---:|:---:|
-| ![POS Billing Screen](docs/screenshots/pos_screen.png)<br><sub>*High-Speed Barcode & Quick Item Entry*</sub> | ![Product Catalog](docs/screenshots/catalog_screen.png)<br><sub>*Category Organization & Product Search*</sub> | ![Cart & Checkout](docs/screenshots/cart_screen.png)<br><sub>*Weighing Presets & Cash Tender Keypad*</sub> |
+| <img src="docs/screenshots/cart_screen.jpg" width="260" alt="Cart & Counter Billing" /><br><sub>*Tactile Cash Keypad & Quick Edit/Delete*</sub> | <img src="docs/screenshots/catalog_screen.jpg" width="260" alt="Product Catalog" /><br><sub>*Category Organization & Product Search*</sub> | <img src="docs/screenshots/day_closing.png" width="260" alt="Day-End Closing" /><br><sub>*Register Reconciliation & Swipe-to-Delete*</sub> |
 
-| 58 mm Thermal Receipt | A4 GST Tax Invoice | Day-End Register Closing |
+### 🧾 Thermal Receipts, Tax Invoices & Ledger
+| 58 mm Bluetooth Thermal Receipt | A4 GST Tax Invoice (PDF) | Order Details & Audit Trail |
 |:---:|:---:|:---:|
-| ![Thermal Receipt](docs/screenshots/thermal_receipt.png)<br><sub>*Compact 32-Col ESC/POS Print*</sub> | ![A4 Tax Invoice](docs/screenshots/a4_invoice.png)<br><sub>*GST Breakdown & Indian Currency Words*</sub> | ![Day-End Closing](docs/screenshots/day_closing.png)<br><sub>*Drawer Reconciliation & Cash Breakdown*</sub> |
+| <img src="docs/screenshots/thermal_receipt.png" width="260" alt="58mm Thermal Receipt Preview" /><br><sub>*Compact 32-Col ESC/POS Print*</sub> | <img src="docs/screenshots/a4_invoice.png" width="260" alt="A4 GST Tax Invoice" /><br><sub>*Indian Words & GST Breakdown*</sub> | <img src="docs/screenshots/order_details.png" width="260" alt="Order Details" /><br><sub>*In-Place Bill Editing & Audit Trail*</sub> |
 
-> *Note: Placeholders for demonstration. Replace paths in `docs/screenshots/` with actual capture files.*
+### 👥 Customer Ledger & Hardware Setup
+| Customer Udhaar (Credit) Ledger | Bluetooth Thermal Printer Setup |
+|:---:|:---:|
+| <img src="docs/screenshots/customer_ledger.png" width="280" alt="Customer Credit Ledger" /><br><sub>*Receivables & WhatsApp Reminders*</sub> | <img src="docs/screenshots/printer_setup.jpg" width="280" alt="Printer Setup" /><br><sub>*58mm Bluetooth Pairing & Test Print*</sub> |
 
 ---
 
@@ -315,11 +332,13 @@ Shopmate/
 │   ├── fonts/                  # Custom typography (Inter, Playfair Display)
 │   ├── icons/                  # Application iconography
 │   └── images/                 # App logo and splash graphics
+├── docs/                       # Project documentation & captures
+│   └── screenshots/            # Application screenshots
 ├── lib/                        # Flutter source code
 │   ├── core/                   # Shared architectural core (DB, theme, routing)
 │   ├── features/               # Modular business feature packages
 │   └── main.dart               # Bootstrap entry point and orientation lock
-├── test/                       # Unit and widget test suite (92 tests)
+├── test/                       # Unit and widget test suite (93 tests)
 ├── .gitignore                  # Git ignore rules for Flutter & Android
 ├── analysis_options.yaml       # Dart analyzer rules
 ├── pubspec.yaml                # Package manifest and dependencies
