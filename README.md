@@ -381,3 +381,4 @@ While Shopmate POS provides a comprehensive, production-grade offline POS system
 * **Application Package Name**: `com.shopmate.pos`
 * **Current Application Version**: `1.0.0+1`
 * **Target Platforms**: Android (Phones & Tablets)
+* **Contact Email**: jokerupayan@gmail.com
