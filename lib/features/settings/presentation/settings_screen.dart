@@ -85,9 +85,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         }
       });
 
-      _currency = s.currencySymbol;
+      _currency = '₹';
       _dateFormat = s.dateFormat;
-      _language = s.language;
+      _language = s.language.isEmpty ? 'en' : s.language;
       _gstEnabled = s.gstEnabled;
       _taxType = s.taxType;
       _defaultTaxRate = s.taxRateDefault.toInt().toString();
@@ -108,7 +108,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _receiptShowCustomer = s.receiptShowCustomer;
       _receiptShowFooter = s.receiptShowFooter;
       _printCutFeed = s.printCutFeed;
-      _receiptCurrencySymbol = s.receiptCurrencySymbol;
+      _receiptCurrencySymbol = (s.receiptCurrencySymbol == 'Rs.' || s.receiptCurrencySymbol == 'INR' || s.receiptCurrencySymbol.isEmpty)
+          ? '₹'
+          : s.receiptCurrencySymbol;
       _searchEngine = s.searchEngine;
       _logoPath = s.logoPath.isEmpty ? null : s.logoPath;
 
@@ -533,20 +535,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 const Text('Format & Regional', style: AppTypography.section),
                 const SizedBox(height: 14),
-                const Text('Currency Symbol', style: AppTypography.bodyMedium),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: ['₹', '\$', '€', '£', 'AED'].map((curr) {
-                    final isSel = _currency == curr;
-                    return ChoiceChip(
-                      label: Text(curr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      selected: isSel,
-                      onSelected: (val) {
-                        if (val) setState(() => _currency = curr);
-                      },
-                    );
-                  }).toList(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Currency Symbol', style: AppTypography.bodyMedium),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.currency_rupee_rounded, size: 16, color: theme.colorScheme.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            '₹ (Rupees)',
+                            style: TextStyle(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 const Text('Date Format', style: AppTypography.bodyMedium),
@@ -772,10 +787,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   children: [
                     const Text('Receipt currency symbol'),
                     DropdownButton<String>(
-                      value: _receiptCurrencySymbol,
-                      items: ['Rs.', 'INR', '₹'].map((s) {
-                        return DropdownMenuItem(value: s, child: Text(s));
-                      }).toList(),
+                      value: ['₹', 'Rs.'].contains(_receiptCurrencySymbol) ? _receiptCurrencySymbol : '₹',
+                      items: const [
+                        DropdownMenuItem(value: '₹', child: Text('₹ (Rupee)')),
+                        DropdownMenuItem(value: 'Rs.', child: Text('Rs. (Standard)')),
+                      ],
                       onChanged: (val) {
                         if (val != null) setState(() => _receiptCurrencySymbol = val);
                       },

@@ -18,8 +18,6 @@ class LockScreen extends ConsumerStatefulWidget {
 
 class _LockScreenState extends ConsumerState<LockScreen> {
   final LocalAuthentication _auth = LocalAuthentication();
-  final TextEditingController _pinController = TextEditingController();
-  final FocusNode _pinFocus = FocusNode();
   String _enteredPin = '';
   bool _hasError = false;
   String _errorMessage = '';
@@ -27,19 +25,35 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   @override
   void initState() {
     super.initState();
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _checkBiometrics();
-        _pinFocus.requestFocus();
       }
     });
   }
 
   @override
   void dispose() {
-    _pinController.dispose();
-    _pinFocus.dispose();
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      final key = event.logicalKey;
+      if (key == LogicalKeyboardKey.backspace) {
+        _onBackspace();
+        return true;
+      } else if (key == LogicalKeyboardKey.delete || key == LogicalKeyboardKey.escape) {
+        _onClear();
+        return true;
+      } else if (event.character != null && RegExp(r'^[0-9]$').hasMatch(event.character!)) {
+        _onDigit(event.character!);
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _checkBiometrics() async {
@@ -62,6 +76,43 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     }
   }
 
+  void _onDigit(String digit) {
+    if (_enteredPin.length < 4) {
+      HapticFeedback.lightImpact();
+      setState(() {
+        _hasError = false;
+        _errorMessage = '';
+        _enteredPin += digit;
+      });
+
+      if (_enteredPin.length == 4) {
+        _verifyPin(_enteredPin);
+      }
+    }
+  }
+
+  void _onBackspace() {
+    if (_enteredPin.isNotEmpty) {
+      HapticFeedback.lightImpact();
+      setState(() {
+        _hasError = false;
+        _errorMessage = '';
+        _enteredPin = _enteredPin.substring(0, _enteredPin.length - 1);
+      });
+    }
+  }
+
+  void _onClear() {
+    if (_enteredPin.isNotEmpty) {
+      HapticFeedback.lightImpact();
+      setState(() {
+        _hasError = false;
+        _errorMessage = '';
+        _enteredPin = '';
+      });
+    }
+  }
+
   void _verifyPin(String pin) {
     final settings = ref.read(settingsProvider);
     final correctPin = settings.appLockPin;
@@ -74,10 +125,14 @@ class _LockScreenState extends ConsumerState<LockScreen> {
       setState(() {
         _hasError = true;
         _errorMessage = 'Incorrect PIN. Try again.';
-        _enteredPin = '';
-        _pinController.clear();
       });
-      _pinFocus.requestFocus();
+      Future.delayed(const Duration(milliseconds: 650), () {
+        if (mounted && _hasError) {
+          setState(() {
+            _enteredPin = '';
+          });
+        }
+      });
     }
   }
 
@@ -86,144 +141,230 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     context.go(AppRoutes.dashboard);
   }
 
+  Widget _buildKeypadButton({
+    required Widget child,
+    required VoidCallback onTap,
+    Color? backgroundColor,
+    Color? borderColor,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final defaultBg = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFF1F5F9);
+
+    final defaultBorder = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFCBD5E1);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Ink(
+          width: 70,
+          height: 70,
+          decoration: BoxDecoration(
+            color: backgroundColor ?? defaultBg,
+            shape: BoxShape.circle,
+            border: Border.all(color: borderColor ?? defaultBorder, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(settingsProvider);
 
+    const digitStyle = TextStyle(fontSize: 26, fontWeight: FontWeight.bold);
+
     return Scaffold(
-      body: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _pinFocus.requestFocus(),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Hidden offstage textfield driving native device numpad
-              Opacity(
-                opacity: 0.0,
-                child: SizedBox(
-                  width: 1,
-                  height: 1,
-                  child: TextField(
-                    controller: _pinController,
-                    focusNode: _pinFocus,
-                    autofocus: true,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(4),
-                    ],
-                    onChanged: (val) {
-                      setState(() {
-                        _enteredPin = val;
-                        _hasError = false;
-                        _errorMessage = '';
-                      });
-                      if (val.length == 4) {
-                        _verifyPin(val);
-                      }
-                    },
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo / Lock Icon
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.lock_rounded,
+                    size: 38,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-              ),
+                const SizedBox(height: 14),
+                Text(settings.storeName, style: AppTypography.title.copyWith(fontSize: 20)),
+                const SizedBox(height: 4),
+                Text(
+                  'Enter 4-digit PIN to continue',
+                  style: AppTypography.caption.copyWith(
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo / Lock Icon
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.lock_rounded,
-                          size: 40,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(settings.storeName, style: AppTypography.title),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Enter 4-digit PIN to continue',
-                        style: AppTypography.caption.copyWith(
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 28),
+                // PIN Dots Indicator
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(4, (index) {
+                    final isFilled = index < _enteredPin.length;
+                    Color dotColor;
+                    if (_hasError) {
+                      dotColor = AppColors.errorRed;
+                    } else if (isFilled) {
+                      dotColor = theme.colorScheme.primary;
+                    } else {
+                      dotColor = isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1);
+                    }
 
-                      // PIN Dots Indicator (tap to focus device keyboard)
-                      InkWell(
-                        onTap: () => _pinFocus.requestFocus(),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(4, (index) {
-                              final isFilled = index < _enteredPin.length;
-                              Color dotColor;
-                              if (_hasError) {
-                                dotColor = AppColors.errorRed;
-                              } else if (isFilled) {
-                                dotColor = theme.colorScheme.primary;
-                              } else {
-                                dotColor = theme.colorScheme.outline.withValues(alpha: 0.3);
-                              }
-
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 150),
-                                margin: const EdgeInsets.symmetric(horizontal: 10),
-                                width: isFilled ? 20 : 16,
-                                height: isFilled ? 20 : 16,
-                                decoration: BoxDecoration(
-                                  color: dotColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      width: isFilled ? 18 : 14,
+                      height: isFilled ? 18 : 14,
+                      decoration: BoxDecoration(
+                        color: dotColor,
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: 12),
-                      if (_errorMessage.isNotEmpty)
-                        Text(
+                    );
+                  }),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 20,
+                  child: _errorMessage.isNotEmpty
+                      ? Text(
                           _errorMessage,
                           style: AppTypography.captionBold.copyWith(color: AppColors.errorRed),
-                        ),
-
-                      const SizedBox(height: 20),
-                      TextButton.icon(
-                        onPressed: () => _pinFocus.requestFocus(),
-                        icon: const Icon(Icons.dialpad_rounded, size: 18),
-                        label: const Text('Open Device Numpad'),
-                      ),
-
-                      // Biometric quick button if enabled
-                      if (settings.isBiometricEnabled) ...[
-                        const SizedBox(height: 10),
-                        OutlinedButton.icon(
-                          onPressed: _checkBiometrics,
-                          icon: const Icon(Icons.fingerprint_rounded),
-                          label: const Text('Unlock with Fingerprint'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(200, 44),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+
+                // On-Screen Keypad
+                // Row 1: 1, 2, 3
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildKeypadButton(
+                      child: const Text('1', style: digitStyle),
+                      onTap: () => _onDigit('1'),
+                    ),
+                    const SizedBox(width: 22),
+                    _buildKeypadButton(
+                      child: const Text('2', style: digitStyle),
+                      onTap: () => _onDigit('2'),
+                    ),
+                    const SizedBox(width: 22),
+                    _buildKeypadButton(
+                      child: const Text('3', style: digitStyle),
+                      onTap: () => _onDigit('3'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Row 2: 4, 5, 6
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildKeypadButton(
+                      child: const Text('4', style: digitStyle),
+                      onTap: () => _onDigit('4'),
+                    ),
+                    const SizedBox(width: 22),
+                    _buildKeypadButton(
+                      child: const Text('5', style: digitStyle),
+                      onTap: () => _onDigit('5'),
+                    ),
+                    const SizedBox(width: 22),
+                    _buildKeypadButton(
+                      child: const Text('6', style: digitStyle),
+                      onTap: () => _onDigit('6'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Row 3: 7, 8, 9
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildKeypadButton(
+                      child: const Text('7', style: digitStyle),
+                      onTap: () => _onDigit('7'),
+                    ),
+                    const SizedBox(width: 22),
+                    _buildKeypadButton(
+                      child: const Text('8', style: digitStyle),
+                      onTap: () => _onDigit('8'),
+                    ),
+                    const SizedBox(width: 22),
+                    _buildKeypadButton(
+                      child: const Text('9', style: digitStyle),
+                      onTap: () => _onDigit('9'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Row 4: Biometrics / Clear, 0, Backspace
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (settings.isBiometricEnabled)
+                      _buildKeypadButton(
+                        child: Icon(Icons.fingerprint_rounded, size: 30, color: theme.colorScheme.primary),
+                        onTap: _checkBiometrics,
+                      )
+                    else
+                      _buildKeypadButton(
+                        child: const Text(
+                          'C',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.errorRed),
+                        ),
+                        onTap: _onClear,
+                      ),
+                    const SizedBox(width: 22),
+                    _buildKeypadButton(
+                      child: const Text('0', style: digitStyle),
+                      onTap: () => _onDigit('0'),
+                    ),
+                    const SizedBox(width: 22),
+                    _buildKeypadButton(
+                      child: Icon(
+                        Icons.backspace_outlined,
+                        size: 24,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                      onTap: _onBackspace,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

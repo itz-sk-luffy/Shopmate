@@ -20,8 +20,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Step 1 Controllers
   final _storeNameController = TextEditingController(text: 'My General Store');
-  String _selectedCurrency = '₹';
-  String _selectedLanguage = 'en';
+  final String _selectedCurrency = '₹';
+  final String _selectedLanguage = 'en';
 
   // Step 2 Controllers
   String _selectedTaxType = 'exclusive';
@@ -72,6 +72,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final settingsMap = {
       'store_name': _storeNameController.text.trim().isEmpty ? 'My General Store' : _storeNameController.text.trim(),
       'currency_symbol': _selectedCurrency,
+      'receipt_currency_symbol': '₹',
       'language': _selectedLanguage,
       'tax_type': _selectedTaxType,
       'tax_rate_default': _defaultTaxRate,
@@ -221,6 +222,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Step 1: Store profile basics
   Widget _buildStep1Store(bool isDark) {
+    final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -256,41 +258,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   prefixIcon: Icon(Icons.storefront_outlined),
                 ),
               ),
-              const SizedBox(height: 18),
-              Text('Currency Symbol', style: AppTypography.section.copyWith(fontSize: 14)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: ['₹', '\$', '€', '£', 'AED'].map((curr) {
-                  final isSelected = _selectedCurrency == curr;
-                  return ChoiceChip(
-                    label: Text(curr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      if (val) setState(() => _selectedCurrency = curr);
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 18),
-              Text('Language', style: AppTypography.section.copyWith(fontSize: 14)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  {'code': 'en', 'name': 'English'},
-                  {'code': 'hi', 'name': 'हिन्दी (Hindi)'},
-                  {'code': 'mr', 'name': 'मराठी (Marathi)'},
-                ].map((lang) {
-                  final isSelected = _selectedLanguage == lang['code'];
-                  return ChoiceChip(
-                    label: Text(lang['name']!),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      if (val) setState(() => _selectedLanguage = lang['code']!);
-                    },
-                  );
-                }).toList(),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.currency_rupee_rounded, size: 20, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Currency: ₹ (Rupees) • Language: English',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

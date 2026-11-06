@@ -71,7 +71,7 @@ class AppSettingsState {
   bool get receiptShowGst => get('receipt_show_gst', 'true') == 'true';
   bool get receiptShowCustomer => get('receipt_show_customer', 'true') == 'true';
   bool get receiptShowFooter => get('receipt_show_footer', 'true') == 'true';
-  String get receiptCurrencySymbol => get('receipt_currency_symbol', 'Rs.');
+  String get receiptCurrencySymbol => get('receipt_currency_symbol', '₹');
   int get printCutFeed => int.tryParse(get('print_cut_feed', '3')) ?? 3;
   String get printFontSize => get('print_font_size', 'normal');
 

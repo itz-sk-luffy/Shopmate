@@ -78,6 +78,7 @@ class AppDatabase extends _$AppDatabase {
           'bill_prefix': 'INV-',
           'bill_next_number': '1001',
           'currency_symbol': '₹',
+          'receipt_currency_symbol': '₹',
           'date_format': 'dd/MM/yyyy',
           'language': 'en',
           'theme_mode': 'system',
