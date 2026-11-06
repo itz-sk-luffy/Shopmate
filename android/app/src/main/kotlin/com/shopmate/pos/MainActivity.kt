@@ -4,11 +4,11 @@ import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private val DEVICE_CHANNEL = "com.shopmate.pos/device_info"
     private val LAUNCHER_CHANNEL = "com.shopmate.pos/launcher_icon"
     private var deviceChannel: MethodChannel? = null

@@ -21,6 +21,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   String _enteredPin = '';
   bool _hasError = false;
   String _errorMessage = '';
+  bool _isAuthenticating = false;
 
   @override
   void initState() {
@@ -28,7 +29,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _checkBiometrics();
+        _checkBiometrics(isManualTap: false);
       }
     });
   }
@@ -56,23 +57,57 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     return false;
   }
 
-  Future<void> _checkBiometrics() async {
+  Future<void> _checkBiometrics({bool isManualTap = false}) async {
     final settings = ref.read(settingsProvider);
-    if (settings.isBiometricEnabled) {
-      try {
-        final canAuthenticate = await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
-        if (canAuthenticate) {
-          final didAuthenticate = await _auth.authenticate(
-            localizedReason: 'Please authenticate to unlock Shopmate POS',
-            options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
-          );
-          if (didAuthenticate && mounted) {
-            _unlockApp();
-          }
+    if (!settings.isBiometricEnabled || _isAuthenticating) return;
+
+    _isAuthenticating = true;
+    try {
+      final canAuthenticate = await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
+      if (!canAuthenticate) {
+        if (isManualTap && mounted) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'Biometrics not supported on this device';
+          });
         }
-      } catch (_) {
-        // Biometrics unavailable or cancelled, fallback to PIN
+        return;
       }
+
+      final didAuthenticate = await _auth.authenticate(
+        localizedReason: 'Scan fingerprint to unlock Shopmate POS',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+          useErrorDialogs: true,
+        ),
+      );
+
+      if (didAuthenticate && mounted) {
+        _unlockApp();
+      }
+    } on PlatformException catch (e) {
+      if (isManualTap && mounted) {
+        setState(() {
+          _hasError = true;
+          if (e.code == 'NotEnrolled') {
+            _errorMessage = 'No biometrics enrolled in device settings';
+          } else if (e.code == 'LockedOut' || e.code == 'PermanentlyLockedOut') {
+            _errorMessage = 'Biometrics locked. Please enter PIN.';
+          } else {
+            _errorMessage = 'Biometric check cancelled. Enter PIN.';
+          }
+        });
+      }
+    } catch (_) {
+      if (isManualTap && mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Please enter your 4-digit PIN';
+        });
+      }
+    } finally {
+      _isAuthenticating = false;
     }
   }
 
@@ -337,7 +372,10 @@ class _LockScreenState extends ConsumerState<LockScreen> {
                     if (settings.isBiometricEnabled)
                       _buildKeypadButton(
                         child: Icon(Icons.fingerprint_rounded, size: 30, color: theme.colorScheme.primary),
-                        onTap: _checkBiometrics,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          _checkBiometrics(isManualTap: true);
+                        },
                       )
                     else
                       _buildKeypadButton(

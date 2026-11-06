@@ -37,6 +37,8 @@
 
 # Local Auth Biometrics
 -keep class io.flutter.plugins.localauth.** { *; }
+-keep class androidx.biometric.** { *; }
+-keep class androidx.fragment.app.** { *; }
 -dontwarn androidx.biometric.**
 
 
